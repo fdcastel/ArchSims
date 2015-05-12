@@ -44,10 +44,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Common.fs" />
-    <Compile Include="Cesar.fs" />
+    <Compile Include="Memory.fs" />
     <Compile Include="Neander.fs" />
     <Compile Include="Ramses.fs" />
+    <Compile Include="Cesar.fs" />
+    <Compile Include="Debugger.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

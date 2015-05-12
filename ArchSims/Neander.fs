@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims
 
-open Ufrgs.Inf.ArchSims.Common
+open Ufrgs.Inf.ArchSims.Memory
 
 module Neander =
 
@@ -23,6 +23,7 @@ module Neander =
     }
 
     type Flags = {
+        mutable Halted: bool
         mutable Negative: bool
         mutable Zero: bool
     }
@@ -39,109 +40,99 @@ module Neander =
         ProgramCounter = 0uy
         Accumulator = 0uy
         InstructionRegister = { OpCode = 0uy; OperandAddress = 0uy }
-        Flags = { Negative = false; Zero = true }
+        Flags = { Halted = false; Negative = false; Zero = true }
     }
 
-    let ClearRegisters registers = 
+    let RegistersReset registers = 
         registers.ProgramCounter <- 0uy
         registers.Accumulator <- 0uy
         registers.InstructionRegister.OpCode <- 0uy
         registers.InstructionRegister.OperandAddress <- 0uy            
+        registers.Flags.Halted <- false
         registers.Flags.Negative <- false
         registers.Flags.Zero <- true
     
-    type Cpu() =
-        member val public Registers = CreateRegisters() with get, set
-        member val public Memory = CreateMemory 256 with get
-        member val public Debugger = CreateDebugger() with get, set
+    type Cpu = {
+        Registers: Registers
+        Memory: Memory
+    }
 
-        member this.Fetch() =
-            let readByteFromProgramCounterAndAdvance() =
-                let result = int this.Registers.ProgramCounter |> ReadByte this.Memory
-                this.Registers.ProgramCounter <- this.Registers.ProgramCounter + 1uy            
-                result
+    let CreateCpu() = {
+        Registers = CreateRegisters()
+        Memory = CreateMemory 256
+    }
 
-            this.Registers.InstructionRegister.OpCode <- readByteFromProgramCounterAndAdvance()
-            this.Registers.InstructionRegister.OperandAddress <- 
-                match LanguagePrimitives.EnumOfValue this.Registers.InstructionRegister.OpCode with
-                | Instruction.Sta
-                | Instruction.Lda
-                | Instruction.Add
-                | Instruction.Or
-                | Instruction.And
-                | Instruction.Jmp
-                | Instruction.Jn
-                | Instruction.Jz -> readByteFromProgramCounterAndAdvance()  // Instructions with operand
-                | _ -> 0uy // Instructions without operand
+    let Fetch cpu = 
+        let readByteFromProgramCounterAndAdvance() =
+            let result = MemoryReadByte cpu.Memory (int cpu.Registers.ProgramCounter)
+            cpu.Registers.ProgramCounter <- cpu.Registers.ProgramCounter + 1uy            
+            result
 
-        member this.Execute() =
-            let readOperand() =
-                int this.Registers.InstructionRegister.OperandAddress |> ReadByte this.Memory
+        cpu.Registers.InstructionRegister.OpCode <- readByteFromProgramCounterAndAdvance()
+        cpu.Registers.InstructionRegister.OperandAddress <- 
+            match LanguagePrimitives.EnumOfValue cpu.Registers.InstructionRegister.OpCode with
+            | Instruction.Sta
+            | Instruction.Lda
+            | Instruction.Add
+            | Instruction.Or
+            | Instruction.And
+            | Instruction.Jmp
+            | Instruction.Jn
+            | Instruction.Jz -> readByteFromProgramCounterAndAdvance()  // Instructions with operand
+            | _ -> 0uy // Instructions without operand
 
-            let writeAccumulator value = 
-                this.Registers.Accumulator <- value
-                this.Registers.Flags.Zero <- value = 0uy
-                this.Registers.Flags.Negative <- value > 0x7Fuy
+    let Execute cpu =
+        let readOperand() =
+            MemoryReadByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress)
 
-            let jumpIf condition = 
-                if condition then
-                    this.Registers.ProgramCounter <- this.Registers.InstructionRegister.OperandAddress                
+        let writeAccumulator value = 
+            cpu.Registers.Accumulator <- value
+            cpu.Registers.Flags.Zero <- value = 0uy
+            cpu.Registers.Flags.Negative <- value > 0x7Fuy
 
-            match LanguagePrimitives.EnumOfValue this.Registers.InstructionRegister.OpCode with
-            | Instruction.Sta ->   // STA addr: MEM(addr) <- AC
-                this.Registers.Accumulator |> WriteByte this.Memory (int this.Registers.InstructionRegister.OperandAddress) 
+        let jumpIf condition = 
+            if condition then
+                cpu.Registers.ProgramCounter <- cpu.Registers.InstructionRegister.OperandAddress                
 
-            | Instruction.Lda ->   // LDA addr: AC <- MEM(addr)
-                readOperand() |> writeAccumulator 
+        let instruction = LanguagePrimitives.EnumOfValue cpu.Registers.InstructionRegister.OpCode
+        match instruction with
+        | Instruction.Sta ->   // STA addr: MEM(addr) <- AC
+            cpu.Registers.Accumulator |> MemoryWriteByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress) 
 
-            | Instruction.Add ->   // ADD addr: AC <- AC + MEM(addr)
-                this.Registers.Accumulator + readOperand() |> writeAccumulator
+        | Instruction.Lda ->   // LDA addr: AC <- MEM(addr)
+            readOperand() |> writeAccumulator 
 
-            | Instruction.Or ->    // OR addr: AC <- AC or MEM(addr) 
-                this.Registers.Accumulator ||| readOperand() |> writeAccumulator
+        | Instruction.Add ->   // ADD addr: AC <- AC + MEM(addr)
+            cpu.Registers.Accumulator + readOperand() |> writeAccumulator
 
-            | Instruction.And ->   // AND addr: AC <- AC and MEM(addr) 
-                this.Registers.Accumulator &&& readOperand() |> writeAccumulator
+        | Instruction.Or ->    // OR addr: AC <- AC or MEM(addr) 
+            cpu.Registers.Accumulator ||| readOperand() |> writeAccumulator
 
-            | Instruction.Not ->   // NOT: AC <- not AC
-                ~~~this.Registers.Accumulator |> writeAccumulator
+        | Instruction.And ->   // AND addr: AC <- AC and MEM(addr) 
+            cpu.Registers.Accumulator &&& readOperand() |> writeAccumulator
 
-            | Instruction.Jmp ->   // JMP addr: PC <- addr
-                jumpIf true
+        | Instruction.Not ->   // NOT: AC <- not AC
+            ~~~cpu.Registers.Accumulator |> writeAccumulator
+
+        | Instruction.Jmp ->   // JMP addr: PC <- addr
+            jumpIf true
                     
-            | Instruction.Jn ->    // JN addr: IF N=1 PC <- addr
-                jumpIf this.Registers.Flags.Negative
+        | Instruction.Jn ->    // JN addr: IF N=1 PC <- addr
+            jumpIf cpu.Registers.Flags.Negative
 
-            | Instruction.Jz ->    // JZ addr: IF Z=1 PC <- addr
-                jumpIf this.Registers.Flags.Zero
+        | Instruction.Jz ->    // JZ addr: IF Z=1 PC <- addr
+            jumpIf cpu.Registers.Flags.Zero
                 
-            | Instruction.Hlt ->   // HLT
-                this.Debugger.Halted <- true
-                
-            | Instruction.Nop      // NOP (or unknown instruction): nothing to do
-            | _ -> ()
+        | Instruction.Hlt      // HLT, NOP or unknown instruction: nothing to do
+        | Instruction.Nop
+        | _ -> ()
 
-        member this.Step() =
-            this.Debugger |> ClearDebuggerFlags 
-            if this.Debugger.Breakpoints.Contains (int this.Registers.ProgramCounter) then
-                this.Debugger.BreakpointHit <- true
+        cpu.Registers.Flags.Halted <- instruction = Instruction.Hlt
 
-            this.Fetch()
-            this.Execute()
+    let Step cpu =
+        Fetch cpu
+        Execute cpu
 
-            this.Debugger.InstructionCount <- this.Debugger.InstructionCount + 1
-
-        member this.Reset() =
-            this.Registers |> ClearRegisters
-            this.Memory |> ClearMemory 
-            this.Debugger |> ClearDebugger 
-
-        member this.Run() =
-            this.Run 10000000
-
-        member this.Run maximumInstructions =
-            this.Debugger |> ClearDebuggerFlags 
-            while (not this.Debugger.Halted) && (not this.Debugger.BreakpointHit) do
-                this.Step()
-                if this.Debugger.InstructionCount >= maximumInstructions then
-                    raise CpuRunningForeverException
+    let Reset cpu =
+        cpu.Registers |> RegistersReset
+        cpu.Memory |> MemoryReset 

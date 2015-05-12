@@ -45,9 +45,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="CesarTests.fs" />
+    <Compile Include="DebuggerTests.fs" />
     <Compile Include="NeanderTests.fs" />
     <Compile Include="RamsesTests.fs" />
+    <Compile Include="CesarTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ArchSims\ArchSims.fsproj">

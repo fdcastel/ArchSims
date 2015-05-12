@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims
 
-open Ufrgs.Inf.ArchSims.Common
+open Ufrgs.Inf.ArchSims.Memory
 
 module Ramses =
 
@@ -44,6 +44,7 @@ module Ramses =
     }
 
     type Flags = {
+        mutable Halted: bool
         mutable Negative: bool
         mutable Zero: bool
         mutable Carry: bool
@@ -64,164 +65,153 @@ module Ramses =
         Rx = 0uy
         ProgramCounter = 0uy
         InstructionRegister = { OpCode = 0uy; OperandAddress = 0uy }
-        Flags = { Negative = false; Zero = true; Carry = false }
+        Flags = { Halted = false; Negative = false; Zero = true; Carry = false }
     }
 
-    let ClearRegisters registers = 
+    let RegistersReset registers = 
         registers.Ra <- 0uy
         registers.Rb <- 0uy
         registers.Rx <- 0uy
         registers.ProgramCounter <- 0uy
         registers.InstructionRegister.OpCode <- 0uy
         registers.InstructionRegister.OperandAddress <- 0uy            
+        registers.Flags.Halted <- false
         registers.Flags.Negative <- false
         registers.Flags.Zero <- true
         registers.Flags.Carry <- false
     
-    type Cpu() =
-        member val public Registers = CreateRegisters() with get, set
-        member val public Memory = CreateMemory 256 with get
-        member val public Debugger = CreateDebugger() with get, set
+    type Cpu = {
+        Registers: Registers
+        Memory: Memory
+    }
 
-        member this.Fetch() =
-            let returnProgramCounterAndAdvance() =
-                let result = this.Registers.ProgramCounter
-                this.Registers.ProgramCounter <- this.Registers.ProgramCounter + 1uy            
-                result
+    let CreateCpu() = {
+        Registers = CreateRegisters()
+        Memory = CreateMemory 256
+    }
 
-            let readByteFromProgramCounterAndAdvance() =
-                let result = int this.Registers.ProgramCounter |> ReadByte this.Memory
-                this.Registers.ProgramCounter <- this.Registers.ProgramCounter + 1uy            
-                result
+    let Fetch cpu = 
+        let returnProgramCounterAndAdvance() =
+            let result = cpu.Registers.ProgramCounter
+            cpu.Registers.ProgramCounter <- cpu.Registers.ProgramCounter + 1uy            
+            result
 
-            this.Registers.InstructionRegister.OpCode <- readByteFromProgramCounterAndAdvance()
+        let readByteFromProgramCounterAndAdvance() =
+            let result = MemoryReadByte cpu.Memory (int cpu.Registers.ProgramCounter)
+            cpu.Registers.ProgramCounter <- cpu.Registers.ProgramCounter + 1uy            
+            result
 
-            let instruction = LanguagePrimitives.EnumOfValue (this.Registers.InstructionRegister.OpCode &&& InstructionMask)
-            let addressMode = LanguagePrimitives.EnumOfValue (this.Registers.InstructionRegister.OpCode &&& AddressModeMask)
-            this.Registers.InstructionRegister.OperandAddress <- 
-                match instruction with
-                | Instruction.Str
-                | Instruction.Ldr
-                | Instruction.Add
-                | Instruction.Or
-                | Instruction.And
-                | Instruction.Sub
-                | Instruction.Jmp
-                | Instruction.Jn
-                | Instruction.Jz 
-                | Instruction.Jc
-                | Instruction.Jsr -> // Instructions with operand
-                    match addressMode with
-                    | AddressMode.Direct -> readByteFromProgramCounterAndAdvance()
-                    | AddressMode.Indirect -> int (readByteFromProgramCounterAndAdvance()) |> ReadByte this.Memory
-                    | AddressMode.Immediate -> if instruction >= Instruction.Jmp then readByteFromProgramCounterAndAdvance() else returnProgramCounterAndAdvance()
-                    | AddressMode.Indexed -> this.Registers.Rx + readByteFromProgramCounterAndAdvance()
-                    | _ -> failwith "Invalid AddressMode"
-                | _ -> 0uy // Instructions without operand
+        cpu.Registers.InstructionRegister.OpCode <- readByteFromProgramCounterAndAdvance()
 
-        member this.Execute() =
-            let instruction = LanguagePrimitives.EnumOfValue (this.Registers.InstructionRegister.OpCode &&& InstructionMask)
-            let register = LanguagePrimitives.EnumOfValue (this.Registers.InstructionRegister.OpCode &&& RegisterMask)
-
-            let readOperand() =
-                int this.Registers.InstructionRegister.OperandAddress |> ReadByte this.Memory
-
-            let registerValue = 
-                match register with
-                | Register.Ra -> this.Registers.Ra
-                | Register.Rb -> this.Registers.Rb
-                | Register.Rx -> this.Registers.Rx
-                | _ -> this.Registers.ProgramCounter
-
-            let writeRegister value = 
-                match register with
-                | Register.Ra -> this.Registers.Ra <- value
-                | Register.Rb -> this.Registers.Rb <- value
-                | Register.Rx -> this.Registers.Rx <- value
-                | _ -> this.Registers.ProgramCounter <- value
-                this.Registers.Flags.Zero <- value = 0uy
-                this.Registers.Flags.Negative <- value > 0x7Fuy
-
-            let writeRegisterAndCarry carryFun (value:int) = 
-                byte value |> writeRegister 
-                this.Registers.Flags.Carry <- carryFun value
-
-            let jumpIf condition = 
-                if condition then
-                    this.Registers.ProgramCounter <- this.Registers.InstructionRegister.OperandAddress                
-
+        let instruction = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& InstructionMask)
+        let addressMode = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& AddressModeMask)
+        cpu.Registers.InstructionRegister.OperandAddress <- 
             match instruction with
-            | Instruction.Str ->   // STR r oper
-                registerValue |> WriteByte this.Memory (int this.Registers.InstructionRegister.OperandAddress)
+            | Instruction.Str
+            | Instruction.Ldr
+            | Instruction.Add
+            | Instruction.Or
+            | Instruction.And
+            | Instruction.Sub
+            | Instruction.Jmp
+            | Instruction.Jn
+            | Instruction.Jz 
+            | Instruction.Jc
+            | Instruction.Jsr -> // Instructions with operand
+                match addressMode with
+                | AddressMode.Direct -> readByteFromProgramCounterAndAdvance()
+                | AddressMode.Indirect -> MemoryReadByte cpu.Memory (int (readByteFromProgramCounterAndAdvance()))
+                | AddressMode.Immediate -> if instruction >= Instruction.Jmp then readByteFromProgramCounterAndAdvance() else returnProgramCounterAndAdvance()
+                | AddressMode.Indexed -> cpu.Registers.Rx + readByteFromProgramCounterAndAdvance()
+                | _ -> failwith "Invalid AddressMode"
+            | _ -> 0uy // Instructions without operand
 
-            | Instruction.Ldr ->   // LDR r oper
-                readOperand() |> writeRegister
+    let Execute cpu =
+        let instruction = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& InstructionMask)
+        let register = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& RegisterMask)
 
-            | Instruction.Add ->   // ADD r oper
-                int registerValue + int (readOperand()) |> writeRegisterAndCarry (fun value -> value > 0xFF)
+        let readOperand() =
+            MemoryReadByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress)
 
-            | Instruction.Or ->    // OR r oper
-                registerValue ||| readOperand() |> writeRegister
+        let registerValue = 
+            match register with
+            | Register.Ra -> cpu.Registers.Ra
+            | Register.Rb -> cpu.Registers.Rb
+            | Register.Rx -> cpu.Registers.Rx
+            | _ -> cpu.Registers.ProgramCounter
 
-            | Instruction.And ->   // AND r oper
-                registerValue &&& readOperand() |> writeRegister
+        let writeRegister value = 
+            match register with
+            | Register.Ra -> cpu.Registers.Ra <- value
+            | Register.Rb -> cpu.Registers.Rb <- value
+            | Register.Rx -> cpu.Registers.Rx <- value
+            | _ -> cpu.Registers.ProgramCounter <- value
+            cpu.Registers.Flags.Zero <- value = 0uy
+            cpu.Registers.Flags.Negative <- value > 0x7Fuy
 
-            | Instruction.Not ->   // NOT r
-                ~~~registerValue |> writeRegister
+        let writeRegisterAndCarry carryFun (value:int) = 
+            byte value |> writeRegister 
+            cpu.Registers.Flags.Carry <- carryFun value
 
-            | Instruction.Sub ->   // SUB r oper
-                int registerValue + 0x100 - int (readOperand()) |> writeRegisterAndCarry (fun value -> value > 0xFF)
-                this.Registers.Flags.Carry <- not this.Registers.Flags.Carry
+        let jumpIf condition = 
+            if condition then
+                cpu.Registers.ProgramCounter <- cpu.Registers.InstructionRegister.OperandAddress                
 
-            | Instruction.Jmp ->   // JMP addr: PC <- addr
-                jumpIf true
+        match instruction with
+        | Instruction.Str ->   // STR r oper
+            registerValue |> MemoryWriteByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress)
+
+        | Instruction.Ldr ->   // LDR r oper
+            readOperand() |> writeRegister
+
+        | Instruction.Add ->   // ADD r oper
+            int registerValue + int (readOperand()) |> writeRegisterAndCarry (fun value -> value > 0xFF)
+
+        | Instruction.Or ->    // OR r oper
+            registerValue ||| readOperand() |> writeRegister
+
+        | Instruction.And ->   // AND r oper
+            registerValue &&& readOperand() |> writeRegister
+
+        | Instruction.Not ->   // NOT r
+            ~~~registerValue |> writeRegister
+
+        | Instruction.Sub ->   // SUB r oper
+            int registerValue + 0x100 - int (readOperand()) |> writeRegisterAndCarry (fun value -> value > 0xFF)
+            cpu.Registers.Flags.Carry <- not cpu.Registers.Flags.Carry
+
+        | Instruction.Jmp ->   // JMP addr: PC <- addr
+            jumpIf true
                     
-            | Instruction.Jn ->    // JN addr: IF N=1 PC <- addr
-                jumpIf this.Registers.Flags.Negative
+        | Instruction.Jn ->    // JN addr: IF N=1 PC <- addr
+            jumpIf cpu.Registers.Flags.Negative
 
-            | Instruction.Jz ->    // JZ addr: IF Z=1 PC <- addr
-                jumpIf this.Registers.Flags.Zero
+        | Instruction.Jz ->    // JZ addr: IF Z=1 PC <- addr
+            jumpIf cpu.Registers.Flags.Zero
                 
-            | Instruction.Jc ->    // JC addr: IF C=1 PC <- addr
-                jumpIf this.Registers.Flags.Carry
+        | Instruction.Jc ->    // JC addr: IF C=1 PC <- addr
+            jumpIf cpu.Registers.Flags.Carry
                 
-            | Instruction.Jsr ->   // JSR addr: MEM(addr) <- PC, PC <- addr + 1
-                this.Registers.ProgramCounter |> WriteByte this.Memory (int this.Registers.InstructionRegister.OperandAddress)
-                this.Registers.ProgramCounter <- this.Registers.InstructionRegister.OperandAddress + 1uy
+        | Instruction.Jsr ->   // JSR addr: MEM(addr) <- PC, PC <- addr + 1
+            cpu.Registers.ProgramCounter |> MemoryWriteByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress)
+            cpu.Registers.ProgramCounter <- cpu.Registers.InstructionRegister.OperandAddress + 1uy
                 
-            | Instruction.Neg ->   // NEG r 
-                int ((~~~registerValue) + 1uy) |> writeRegisterAndCarry (fun x -> registerValue = 0uy)
+        | Instruction.Neg ->   // NEG r 
+            int ((~~~registerValue) + 1uy) |> writeRegisterAndCarry (fun x -> registerValue = 0uy)
 
-            | Instruction.Shr ->   // SHR r
-                int (registerValue >>> 1) |> writeRegisterAndCarry (fun x -> (registerValue &&& 1uy) <> 0uy)
+        | Instruction.Shr ->   // SHR r
+            int (registerValue >>> 1) |> writeRegisterAndCarry (fun x -> (registerValue &&& 1uy) <> 0uy)
 
-            | Instruction.Hlt ->   // HLT
-                this.Debugger.Halted <- true
-                
-            | Instruction.Nop      // NOP (or unknown instruction): nothing to do
-            | _ -> ()
+        | Instruction.Hlt      // HLT, NOP or unknown instruction: nothing to do
+        | Instruction.Nop
+        | _ -> ()
+            
+        cpu.Registers.Flags.Halted <- instruction = Instruction.Hlt
 
-        member this.Step() =
-            this.Debugger |> ClearDebuggerFlags
-            if this.Debugger.Breakpoints.Contains (int this.Registers.ProgramCounter) then
-                this.Debugger.BreakpointHit <- true
+    let Step cpu =
+        Fetch cpu
+        Execute cpu
 
-            this.Fetch()
-            this.Execute()
-
-            this.Debugger.InstructionCount <- this.Debugger.InstructionCount + 1
-
-        member this.Reset() =
-            this.Registers |> ClearRegisters
-            this.Memory |> ClearMemory 
-            this.Debugger |> ClearDebugger 
-
-        member this.Run() =
-            this.Run 10000000
-
-        member this.Run maximumInstructions =
-            this.Debugger |> ClearDebuggerFlags
-            while (not this.Debugger.Halted) && (not this.Debugger.BreakpointHit) do
-                this.Step()
-                if this.Debugger.InstructionCount >= maximumInstructions then
-                    raise CpuRunningForeverException
+    let Reset cpu =
+        cpu.Registers |> RegistersReset
+        cpu.Memory |> MemoryReset 
