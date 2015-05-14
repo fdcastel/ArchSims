@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims", "ArchSims\ArchSi
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.Tests", "ArchSims.Tests\ArchSims.Tests.fsproj", "{A825222E-01EF-4D63-80B9-C32CE4DA3C65}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.Assemblers", "ArchSims.Assemblers\ArchSims.Assemblers.fsproj", "{211700F3-1ADD-4A30-BB32-585C347A1EE2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{A825222E-01EF-4D63-80B9-C32CE4DA3C65}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A825222E-01EF-4D63-80B9-C32CE4DA3C65}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A825222E-01EF-4D63-80B9-C32CE4DA3C65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{211700F3-1ADD-4A30-BB32-585C347A1EE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{211700F3-1ADD-4A30-BB32-585C347A1EE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{211700F3-1ADD-4A30-BB32-585C347A1EE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{211700F3-1ADD-4A30-BB32-585C347A1EE2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

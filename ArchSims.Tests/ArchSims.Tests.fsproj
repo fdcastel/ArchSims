@@ -33,30 +33,6 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\ArchSims.Tests.XML</DocumentationFile>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="DebuggerTests.fs" />
-    <Compile Include="NeanderTests.fs" />
-    <Compile Include="RamsesTests.fs" />
-    <Compile Include="CesarTests.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ArchSims\ArchSims.fsproj">
-      <Name>ArchSims</Name>
-      <Project>{02d81604-f01f-493e-a370-eae4ec7f6704}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
@@ -73,6 +49,34 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="DebuggerTests.fs" />
+    <Compile Include="NeanderTests.fs" />
+    <Compile Include="RamsesTests.fs" />
+    <Compile Include="CesarTests.fs" />
+    <Content Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <ProjectReference Include="..\ArchSims.Assemblers\ArchSims.Assemblers.fsproj">
+      <Name>ArchSims.Assemblers</Name>
+      <Project>{211700f3-1add-4a30-bb32-585c347a1ee2}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\ArchSims\ArchSims.fsproj">
+      <Name>ArchSims</Name>
+      <Project>{02d81604-f01f-493e-a370-eae4ec7f6704}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
