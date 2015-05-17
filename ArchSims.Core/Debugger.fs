@@ -1,4 +1,4 @@
-﻿namespace Ufrgs.Inf.ArchSims
+﻿namespace Ufrgs.Inf.ArchSims.Core
 
 open System.Collections.Generic
 

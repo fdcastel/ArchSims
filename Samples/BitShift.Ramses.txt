@@ -1,0 +1,21 @@
+:StartRA
+	LDR A #128
+:RepeatRA
+	SHR A
+	JZ :StartRB
+	JMP :RepeatRA
+:StartRB
+	LDR B #128
+:RepeatRB
+	SHR B
+	JZ :StartRX
+	JMP :RepeatRB
+:StartRX
+	LDR X #128
+:RepeatRX
+	SHR X
+	JZ :Finish
+	JMP :RepeatRX
+
+:Finish
+	HLT

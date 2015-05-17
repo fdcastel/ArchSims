@@ -1,8 +1,3 @@
 @ECHO OFF
-RMDIR /S /Q .\ArchSims\bin
-RMDIR /S /Q .\ArchSims\obj
-RMDIR /S /Q .\ArchSims.Assemblers\bin
-RMDIR /S /Q .\ArchSims.Assemblers\obj
-RMDIR /S /Q .\ArchSims.Tests\bin
-RMDIR /S /Q .\ArchSims.Tests\obj
-RMDIR /S /Q .\TestResults
+powershell -c "Get-ChildItem -Include bin,obj,TestResults -Recurse | Remove-Item -Recurse -Force | Out-Null"
+IF ERRORLEVEL 1 PAUSE && EXIT /B 1

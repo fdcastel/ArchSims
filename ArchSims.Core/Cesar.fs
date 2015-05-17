@@ -1,6 +1,6 @@
-﻿namespace Ufrgs.Inf.ArchSims
+﻿namespace Ufrgs.Inf.ArchSims.Core
 
-open Ufrgs.Inf.ArchSims.Memory
+open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Cesar =
 
@@ -63,31 +63,32 @@ module Cesar =
     | R7 = 0x07uy // 0000 0111
 
     type AddressMode =
-    | Register           = 0x00uy // 0000 0000
-    | RegPostInc         = 0x08uy // 0000 1000
-    | RegPreDec          = 0x10uy // 0001 0000
-    | Indexed            = 0x18uy // 0001 1000
-    | RegisterIndirect   = 0x20uy // 0010 0000
-    | RegPostIncIndirect = 0x28uy // 0010 1000
-    | RegPreDecIndirect  = 0x30uy // 0011 0000
-    | IndexedIndirect    = 0x38uy // 0011 1000
+    | Register           = 0b00000000uy
+    | RegPostInc         = 0b00001000uy
+    | RegPreDec          = 0b00010000uy
+    | Indexed            = 0b00011000uy
+    | RegisterIndirect   = 0b00100000uy
+    | RegPostIncIndirect = 0b00101000uy
+    | RegPreDecIndirect  = 0b00110000uy
+    | IndexedIndirect    = 0b00111000uy
 
-    let Indirect  = 0x20uy //0010 0000
+    let Indirect  = byte AddressMode.RegisterIndirect
     let Immediate = byte AddressMode.RegPostInc ||| byte Register.R7
     let Direct    = Immediate ||| Indirect
         
-    let InstructionMask    = 0xF0uy // 1111 0000
-    let SubInstructionMask = 0x0Fuy // 0000 1111
-    let RegisterMask       = 0x07uy // 0000 0111
-    let AddressModeMask    = 0x38uy // 0011 1000
+    let InstructionMask    = 0b11110000uy
+    let SubInstructionMask = 0b00001111uy
+
+    let AddressModeMask    = 0b00111000uy
+    let RegisterMask       = 0b00000111uy
 
     let DisplayMemoryAddress = 0xFFDAus // Start of display memory mapped area 
 
     type Flag =
-    | Negative = 0x08uy // 0000 1000
-    | Zero     = 0x04uy // 0000 0100
-    | Overflow = 0x02uy // 0000 0010
-    | Carry    = 0x01uy // 0000 0001
+    | Negative = 0b00001000uy
+    | Zero     = 0b00000100uy
+    | Overflow = 0b00000010uy
+    | Carry    = 0b00000001uy
 
     type Flags = {
         mutable Halted: bool

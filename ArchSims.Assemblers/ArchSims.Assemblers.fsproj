@@ -71,8 +71,10 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\ArchSims\ArchSims.fsproj">
-      <Name>ArchSims</Name>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ArchSims.Core\ArchSims.Core.fsproj">
+      <Name>ArchSims.Core</Name>
       <Project>{02d81604-f01f-493e-a370-eae4ec7f6704}</Project>
       <Private>True</Private>
     </ProjectReference>

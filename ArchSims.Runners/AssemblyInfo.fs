@@ -1,4 +1,4 @@
-﻿namespace ArchSims.Assemblers.AssemblyInfo
+﻿namespace ArchSims.Runners.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,11 +7,11 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("ArchSims.Assemblers")>]
+[<assembly: AssemblyTitle("ArchSims.Runners")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("ArchSims.Assemblers")>]
+[<assembly: AssemblyProduct("ArchSims.Runners")>]
 [<assembly: AssemblyCopyright("Copyright © R.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -22,7 +22,7 @@ open System.Runtime.InteropServices
 [<assembly: ComVisible(false)>]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[<assembly: Guid("211700f3-1add-4a30-bb32-585c347a1ee2")>]
+[<assembly: Guid("4a14125e-057e-424d-8859-e1212c58ce08")>]
 
 // Version information for an assembly consists of the following four values:
 // 

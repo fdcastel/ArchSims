@@ -1,6 +1,6 @@
-﻿namespace Ufrgs.Inf.ArchSims
+﻿namespace Ufrgs.Inf.ArchSims.Core
 
-open Ufrgs.Inf.ArchSims.Memory
+open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Ramses =
 
@@ -34,12 +34,12 @@ module Ramses =
     | Immediate = 0x02uy // 0000 0010
     | Indexed   = 0x03uy // 0000 0011
         
-    let InstructionMask = 0xF0uy // 1111 0000
-    let RegisterMask    = 0x0Cuy // 0000 1100
-    let AddressModeMask = 0x03uy // 0000 0011
+    let InstructionMask = 0b11110000uy
+    let RegisterMask    = 0b00001100uy
+    let AddressModeMask = 0b00000011uy
 
     type InstructionRegister = {
-        mutable OpCode: byte;
+        mutable OpCode: byte
         mutable OperandAddress: byte
     }
 

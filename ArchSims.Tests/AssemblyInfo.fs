@@ -12,7 +12,7 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
 [<assembly: AssemblyProduct("ArchSims.Tests")>]
-[<assembly: AssemblyCopyright("Copyright © R.Weber / FDCastel 2015")>]
+[<assembly: AssemblyCopyright("Copyright © R.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
 

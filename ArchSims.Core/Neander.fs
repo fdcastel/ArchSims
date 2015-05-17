@@ -1,6 +1,6 @@
-﻿namespace Ufrgs.Inf.ArchSims
+﻿namespace Ufrgs.Inf.ArchSims.Core
 
-open Ufrgs.Inf.ArchSims.Memory
+open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Neander =
 
@@ -18,7 +18,7 @@ module Neander =
     | Hlt = 0xF0uy // 1111 0000
 
     type InstructionRegister = {
-        mutable OpCode: byte;
+        mutable OpCode: byte
         mutable OperandAddress: byte
     }
 
@@ -29,8 +29,8 @@ module Neander =
     }
 
     type Registers = {
-        mutable ProgramCounter: byte;
-        mutable Accumulator: byte;
+        mutable ProgramCounter: byte
+        mutable Accumulator: byte
         
         InstructionRegister: InstructionRegister
         Flags: Flags

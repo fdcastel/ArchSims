@@ -1,4 +1,4 @@
-﻿namespace ArchSims.AssemblyInfo
+﻿namespace ArchSims.Core.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,12 +7,12 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("ArchSims")>]
+[<assembly: AssemblyTitle("ArchSims.Core")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("ArchSims")>]
-[<assembly: AssemblyCopyright("Copyright © R.Weber / FDCastel 2015")>]
+[<assembly: AssemblyProduct("ArchSims.Core")>]
+[<assembly: AssemblyCopyright("Copyright © R.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
 

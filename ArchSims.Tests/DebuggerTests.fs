@@ -2,9 +2,9 @@
 
 open Microsoft.VisualStudio.TestTools.UnitTesting
 
-open Ufrgs.Inf.ArchSims.Debugger
-open Ufrgs.Inf.ArchSims.Memory
-open Ufrgs.Inf.ArchSims.Neander
+open Ufrgs.Inf.ArchSims.Core.Debugger
+open Ufrgs.Inf.ArchSims.Core.Memory
+open Ufrgs.Inf.ArchSims.Core.Neander
 
 type DebuggerState =
     | Instructions of int
@@ -14,9 +14,9 @@ type DebuggerState =
 [<TestClass>]
 type DebuggerTests() = 
     let cpu = CreateCpu()
-    let debugger = CreateDebugger (fun () -> int cpu.Registers.ProgramCounter) 
-                                   (fun () -> Step cpu; 
-                                              cpu.Registers.Flags.Halted)
+    let debugger = CreateDebugger (fun () -> int cpu.Registers.ProgramCounter)
+                                  (fun () -> Step cpu;
+                                             cpu.Registers.Flags.Halted)
 
     member this.AssertDebuggerState states =
         for state in states do

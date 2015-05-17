@@ -2,8 +2,8 @@
 
 open Microsoft.VisualStudio.TestTools.UnitTesting
 
-open Ufrgs.Inf.ArchSims.Memory
-open Ufrgs.Inf.ArchSims.Cesar
+open Ufrgs.Inf.ArchSims.Core.Memory
+open Ufrgs.Inf.ArchSims.Core.Cesar
 
 type CesarState =
     | R0 of uint16

@@ -2,9 +2,9 @@
 
 open Microsoft.VisualStudio.TestTools.UnitTesting
 
-open Ufrgs.Inf.ArchSims.Memory
-open Ufrgs.Inf.ArchSims.Ramses
-open Ufrgs.Inf.ArchSims.RamsesAssembler
+open Ufrgs.Inf.ArchSims.Core.Memory
+open Ufrgs.Inf.ArchSims.Core.Ramses
+open Ufrgs.Inf.ArchSims.Assemblers.RamsesAssembler
 
 type RamsesState =
     | Ra of byte
@@ -304,41 +304,86 @@ type RamsesTests() =
         this.AssertRamsesState [FlagsHalted false]
 
     [<TestMethod>]
-    member this.``Ramses: Assembler works as expected``() =
-        Assert.AreEqual([byte Instruction.Nop], Assemble "NOP")
-        Assert.AreEqual([byte Instruction.Hlt], Assemble "HLT")
+    member this.``Ramses: AssembleInstruction works as expected``() =
+        Assert.AreEqual([byte Instruction.Nop], AssembleInstruction "NOP")
+        Assert.AreEqual([byte Instruction.Hlt], AssembleInstruction "HLT")
 
-        Assert.AreEqual([byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy], Assemble "STR A 12")
-        Assert.AreEqual([byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy], Assemble "STR B 23,I")
-        Assert.AreEqual([byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy], Assemble "STR X #34")
-        Assert.AreEqual([byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy], Assemble "STR A 45,X")
+        Assert.AreEqual([byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy], AssembleInstruction "STR A 12")
+        Assert.AreEqual([byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy], AssembleInstruction "STR B 23,I")
+        Assert.AreEqual([byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy], AssembleInstruction "STR X #34")
+        Assert.AreEqual([byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy], AssembleInstruction "STR A 45,X")
 
-        Assert.AreEqual([byte Instruction.Not ||| byte Register.Ra], Assemble "NOT A")
-        Assert.AreEqual([byte Instruction.Not ||| byte Register.Rb], Assemble "NOT B")
-        Assert.AreEqual([byte Instruction.Not ||| byte Register.Rx], Assemble "NOT X")
+        Assert.AreEqual([byte Instruction.Not ||| byte Register.Ra], AssembleInstruction "NOT A")
+        Assert.AreEqual([byte Instruction.Not ||| byte Register.Rb], AssembleInstruction "NOT B")
+        Assert.AreEqual([byte Instruction.Not ||| byte Register.Rx], AssembleInstruction "NOT X")
 
-        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy], Assemble "JMP 12")
-        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy], Assemble "JMP 23,I")
-        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy], Assemble "JMP #34")
-        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy], Assemble "JMP 45,X")
-
+        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy], AssembleInstruction "JMP 12")
+        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy], AssembleInstruction "JMP 23,I")
+        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy], AssembleInstruction "JMP #34")
+        Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy], AssembleInstruction "JMP 45,X")
 
     [<TestMethod>]
-    member this.``Ramses: Disassembler works as expected``() =
-        Assert.AreEqual("NOP", Disassemble [byte Instruction.Nop])
-        Assert.AreEqual("NOP", Disassemble [byte Instruction.Nop + 5uy])
-        Assert.AreEqual("HLT", Disassemble [byte Instruction.Hlt])
+    member this.``Ramses: DisassembleInstruction works as expected``() =
+        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop])
+        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop + 5uy])
+        Assert.AreEqual("HLT", DisassembleInstruction [byte Instruction.Hlt])
 
-        Assert.AreEqual("STR A 12", Disassemble [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy])
-        Assert.AreEqual("STR B 23,I", Disassemble [byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy])
-        Assert.AreEqual("STR X #34", Disassemble [byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy])
-        Assert.AreEqual("STR A 45,X", Disassemble [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy])
+        Assert.AreEqual("STR A 12", DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy])
+        Assert.AreEqual("STR B 23,I", DisassembleInstruction [byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy])
+        Assert.AreEqual("STR X #34", DisassembleInstruction [byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy])
+        Assert.AreEqual("STR A 45,X", DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy])
 
-        Assert.AreEqual("NOT A", Disassemble [byte Instruction.Not ||| byte Register.Ra])
-        Assert.AreEqual("NOT B", Disassemble [byte Instruction.Not ||| byte Register.Rb])
-        Assert.AreEqual("NOT X", Disassemble [byte Instruction.Not ||| byte Register.Rx])
+        Assert.AreEqual("NOT A", DisassembleInstruction [byte Instruction.Not ||| byte Register.Ra])
+        Assert.AreEqual("NOT B", DisassembleInstruction [byte Instruction.Not ||| byte Register.Rb])
+        Assert.AreEqual("NOT X", DisassembleInstruction [byte Instruction.Not ||| byte Register.Rx])
 
-        Assert.AreEqual("JMP 12", Disassemble [byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy])
-        Assert.AreEqual("JMP 23,I", Disassemble [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy])
-        Assert.AreEqual("JMP #34", Disassemble [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy])
-        Assert.AreEqual("JMP 45,X", Disassemble [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy])
+        Assert.AreEqual("JMP 12", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy])
+        Assert.AreEqual("JMP 23,I", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy])
+        Assert.AreEqual("JMP #34", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy])
+        Assert.AreEqual("JMP 45,X", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy])
+
+    [<TestMethod>]
+    member this.``Ramses: AssembleProgram works as expected``() =
+        let program = """
+            LDR A 10
+            LDR B :L1
+            LDR X :L1,I
+            HLT              ; End of program
+            @10
+            123              ; Ra value
+            :L1
+            14               ; Rb value
+            @14
+            66               ; Rx value
+        """
+
+        let expectedProgram = [|byte Instruction.Ldr ||| byte Register.Ra ||| byte AddressMode.Direct;
+                                10uy;
+                                byte Instruction.Ldr ||| byte Register.Rb ||| byte AddressMode.Direct;
+                                11uy;
+                                byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Indirect;
+                                11uy;
+                                byte Instruction.Hlt;
+                                0uy;
+                                0uy;
+                                0uy;
+                                123uy;
+                                14uy
+                                0uy;
+                                0uy;
+                                66uy|]
+
+        AssembleProgram cpu program
+        let memoryArea = Array.sub cpu.Memory.Data 0 15
+        Assert.AreEqual(0, Array.compareWith (fun a b -> if a = b then 0 else 1) expectedProgram memoryArea)
+
+        Step cpu
+        Step cpu
+        Step cpu
+        Step cpu
+        this.AssertRamsesState [Ra 123uy; Rb 14uy; Rx 66uy; ProgramCounter 7uy; FlagsHalted true]
+
+    [<TestMethod>]
+    [<ExpectedException(typeof<System.Exception>, "Label indefinido: L1")>]
+    member this.``Ramses: AssembleProgram fails with undeclared label``() =
+        AssembleProgram cpu "LDR A :L1"

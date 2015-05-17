@@ -2,8 +2,8 @@
 
 open Microsoft.VisualStudio.TestTools.UnitTesting
 
-open Ufrgs.Inf.ArchSims.Memory
-open Ufrgs.Inf.ArchSims.Neander
+open Ufrgs.Inf.ArchSims.Core.Memory
+open Ufrgs.Inf.ArchSims.Core.Neander
 
 type NeanderState =
     | Accumulator of byte

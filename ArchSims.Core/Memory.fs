@@ -1,4 +1,4 @@
-﻿namespace Ufrgs.Inf.ArchSims
+﻿namespace Ufrgs.Inf.ArchSims.Core
 
 module Memory =
 
@@ -25,7 +25,7 @@ module Memory =
 
     let MemoryWriteByte memory address value =
         memory.WriteCount <- memory.WriteCount + 1
-        memory.Data.[int address] <- value; 
+        memory.Data.[int address] <- value
 
     let MemoryReadWordBigEndian memory address =
         let hi = uint16 (MemoryReadByte memory address) <<< 8
@@ -35,3 +35,7 @@ module Memory =
     let MemoryWriteWordBigEndian memory address (value: uint16) =
         MemoryWriteByte memory address (byte (value >>> 8))
         MemoryWriteByte memory (address + 1) (byte value)
+
+    let MemoryLoad memory address (value: byte list) =
+        let source = List.toArray value
+        Array.blit source 0 memory.Data address source.Length
