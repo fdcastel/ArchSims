@@ -1,0 +1,13 @@
+:Start
+	MOV #32768, R0
+:Loop
+	ROR R0
+	BNE -4           ; 252 / :Loop
+
+	ROR R1           ; Advances carry to next register / Finishes execution when in R7
+	INC 4            ; Next register (self-modifying code)
+	INC 8
+
+	BR :Loop
+@32774
+	HLT              ; End of program

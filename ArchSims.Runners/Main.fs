@@ -52,7 +52,7 @@ module Main =
             | Some CpuType.Neander -> failwith "Não implementado: Neander"
             | Some CpuType.Ahmes   -> failwith "Não implementado: Ahmes"
             | Some CpuType.Ramses  -> Ufrgs.Inf.ArchSims.Runners.RamsesRunner.Run options
-            | Some CpuType.Cesar   -> failwith "Não implementado: Cesar"
+            | Some CpuType.Cesar   -> Ufrgs.Inf.ArchSims.Runners.CesarRunner.Run options
             | None -> failwith "Você deve informar uma cpu através da opção -Cpu."
 
             exit 0

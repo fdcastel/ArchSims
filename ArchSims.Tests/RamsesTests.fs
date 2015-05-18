@@ -322,6 +322,11 @@ type RamsesTests() =
         Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy], AssembleInstruction "JMP #34")
         Assert.AreEqual([byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy], AssembleInstruction "JMP 45,X")
 
+        Assert.AreEqual([byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 0uy], AssembleInstruction "LDR X #0")
+        Assert.AreEqual([byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 127uy], AssembleInstruction "LDR X #127")
+        Assert.AreEqual([byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy], AssembleInstruction "LDR X #128")
+        Assert.AreEqual([byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy], AssembleInstruction "LDR X #255")
+
     [<TestMethod>]
     member this.``Ramses: DisassembleInstruction works as expected``() =
         Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop])
@@ -342,6 +347,11 @@ type RamsesTests() =
         Assert.AreEqual("JMP #34", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy])
         Assert.AreEqual("JMP 45,X", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy])
 
+        Assert.AreEqual("LDR X #0", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 0uy])
+        Assert.AreEqual("LDR X #127", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 127uy])
+        Assert.AreEqual("LDR X #128", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy])
+        Assert.AreEqual("LDR X #255", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy])
+
     [<TestMethod>]
     member this.``Ramses: AssembleProgram works as expected``() =
         let program = """
@@ -349,11 +359,11 @@ type RamsesTests() =
             LDR B :L1
             LDR X :L1,I
             HLT              ; End of program
-            @10
+        @10
             123              ; Ra value
-            :L1
+        :L1
             14               ; Rb value
-            @14
+        @14
             66               ; Rx value
         """
 

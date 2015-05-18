@@ -23,7 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Debug\ArchSims.Runner.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\ArchSims.Runners.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
     <StartArguments>
     </StartArguments>
@@ -36,7 +36,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Release\ArchSims.Runner.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\ArchSims.Runners.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
@@ -60,6 +60,7 @@
     <Content Include="app.config" />
     <Compile Include="Common.fs" />
     <Compile Include="RamsesRunner.fs" />
+    <Compile Include="CesarRunner.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -34,10 +34,10 @@ module RamsesAssembler =
                    attempt (pLabel .>> skipStringCI ",I" |>> (fun l -> ReferenceLabel (l, AddressMode.Indirect))) <|>
                    attempt (skipStringCI "#" >>. pLabel  |>> (fun l -> ReferenceLabel (l, AddressMode.Immediate))) <|>
                    attempt (pLabel                       |>> (fun l -> ReferenceLabel (l, AddressMode.Direct))) <|>
-                   attempt (puint8 .>> skipStringCI ",X"     |>> (fun a -> Literal (a, AddressMode.Indexed))) <|>
-                   attempt (puint8 .>> skipStringCI ",I"     |>> (fun a -> Literal (a, AddressMode.Indirect))) <|>
-                   attempt (skipStringCI "#" >>. puint8      |>> (fun a -> Literal (a, AddressMode.Immediate))) <|>
-                           (puint8                           |>> (fun a -> Literal (a, AddressMode.Direct)))
+                   attempt (puint8 .>> skipStringCI ",X" |>> (fun a -> Literal (a, AddressMode.Indexed))) <|>
+                   attempt (puint8 .>> skipStringCI ",I" |>> (fun a -> Literal (a, AddressMode.Indirect))) <|>
+                   attempt (skipStringCI "#" >>. puint8  |>> (fun a -> Literal (a, AddressMode.Immediate))) <|>
+                           (puint8                       |>> (fun a -> Literal (a, AddressMode.Direct)))
 
     let pInstructionSimple = stringCIReturn "NOP" Instruction.Nop <|>
                              stringCIReturn "HLT" Instruction.Hlt
@@ -73,14 +73,14 @@ module RamsesAssembler =
     let pLabel_ = pLabel .>> pSpacing
     let pConstant_ = puint8 .>> pSpacing
     let pInstruction_ = attempt (pipe3 pInstructionRegisterAndOperand_ pRegister_ pOperand_ (fun i r o -> RegisterAndOperand (i, r, o))) <|>
-                        attempt (pipe2 pInstructionOperandOnly_ pOperand_                   (fun i o -> OperandOnly (i, o))) <|>
-                        attempt (pipe2 pInstructionRegisterOnly_ pRegister_                 (fun i r -> RegisterOnly (i, r))) <|>
-                        attempt (      pInstructionSimple_ |>>                              (fun i -> Simple i))
+                        attempt (pipe2 pInstructionOperandOnly_ pOperand_                   (fun i o   -> OperandOnly (i, o))) <|>
+                        attempt (pipe2 pInstructionRegisterOnly_ pRegister_                 (fun i r   -> RegisterOnly (i, r))) <|>
+                        attempt (      pInstructionSimple_ |>>                              (fun i     -> Simple i))
 
     let pCommand = (pInstruction_ |>> (fun i -> Assemble i)) <|>
-                   (pAt_ |>> (fun a -> At a)) <|>
-                   (pLabel_ |>> (fun l -> Label l)) <|>
-                   (pConstant_ |>> (fun c -> Constant c))
+                   (pAt_          |>> (fun a -> At a)) <|>
+                   (pLabel_       |>> (fun l -> Label l)) <|>
+                   (pConstant_    |>> (fun c -> Constant c))
 
     let pProgram = pSpacing >>. many1 pCommand .>> eof
                             
@@ -91,32 +91,35 @@ module RamsesAssembler =
         | InstructionType.OperandOnly (i, o) -> 
             match o with 
             | Operand.Literal (a, m) -> [byte i ||| byte m; a]
-            | Operand.ReferenceLabel (l, m) -> [byte i ||| byte m; getReferenceFunc l]
+            | Operand.ReferenceLabel (l, m) -> [byte i ||| byte m; getReferenceFunc l 1uy]
         | InstructionType.RegisterAndOperand (i, r, o) -> 
             match o with 
             | Operand.Literal (a, m) -> [byte i ||| byte r ||| byte m; a]
-            | Operand.ReferenceLabel (l, m) -> [byte i ||| byte r ||| byte m; getReferenceFunc l]
+            | Operand.ReferenceLabel (l, m) -> [byte i ||| byte r ||| byte m; getReferenceFunc l 1uy]
         
     let AssembleInstruction input =
         match run pInstruction_ input with
-        | Success(result, _, _)   -> EncodeInstruction result (fun l -> 0uy)
+        | Success(result, _, _)   -> EncodeInstruction result (fun l _ -> 0uy)
         | Failure(errorMsg, _, _) -> failwith errorMsg
+
+    type DeferredAddress = byte * byte
 
     let AssembleProgram cpu input =
         let mutable address = 0
         let labels = new Dictionary<string, byte>()
-        let deferredLabels = new Dictionary<string, List<byte>>()
+        let deferredLabels = new Dictionary<string, List<DeferredAddress>>()
 
-        let getLabelAddress label =
+        let getLabelAddress label offset =
             match labels.TryGetValue(label) with
             | true, labelValue -> labelValue
             | _ ->
                 // Label reference used before its definition. Defer this address... (*)                
+                let newValue = (byte address, offset)
                 match deferredLabels.TryGetValue(label) with
-                | true, deferredValues -> deferredValues.Add(byte address)
+                | true, deferredValues -> deferredValues.Add(newValue)
                 | _ -> 
-                    let deferredValues = new List<byte>()
-                    deferredValues.Add(byte address)
+                    let deferredValues = new List<DeferredAddress>()
+                    deferredValues.Add(newValue)
                     deferredLabels.Add(label, deferredValues)
                 0uy
 
@@ -128,8 +131,8 @@ module RamsesAssembler =
                 match deferredLabels.TryGetValue(label) with
                 | true, deferredValues -> 
                     // (*) ...and fix it now, when we have the value
-                    for a in deferredValues do
-                        cpu.Memory.Data.[int a + 1] <- value         // + 1 = Ugh...
+                    for (a, o) in deferredValues do
+                        cpu.Memory.Data.[int a + int o] <- byte value
                     deferredLabels.Remove(label) |> ignore
                 | _ -> ()
 
@@ -162,16 +165,14 @@ module RamsesAssembler =
     let DisassembleInstruction content =
         match content with
         | [] -> ""
-        | head::tail -> 
-            let firstOpCode = head
-
+        | firstOpCode::tail -> 
             let register() =
                 let register = LanguagePrimitives.EnumOfValue (firstOpCode &&& RegisterMask)
                 match register with
-                | Register.Ra -> sprintf " A"
-                | Register.Rb -> sprintf " B"
-                | Register.Rx -> sprintf " X"
-                | Register.Pc -> sprintf " PC"
+                | Register.Ra -> " A"
+                | Register.Rb -> " B"
+                | Register.Rx -> " X"
+                | Register.Pc -> " PC"
                 | _ -> failwith "Invalid Register"
 
             let operand() =

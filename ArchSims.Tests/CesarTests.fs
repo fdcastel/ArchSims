@@ -4,6 +4,7 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Cesar
+open Ufrgs.Inf.ArchSims.Assemblers.CesarAssembler
 
 type CesarState =
     | R0 of uint16
@@ -132,8 +133,16 @@ type CesarTests() =
         cpu.Memory.Data.[address + 1] <- 3uy
         Step cpu
 
-        let expectedPc = uint16 address + (if branchExpected then 5us else 2us)
-        this.AssertCesarState [ProgramCounter expectedPc; MemoryReads (memoryReads + 2)]
+        let newAddress = address + (if branchExpected then 5 else 2)
+        this.AssertCesarState [ProgramCounter (uint16 newAddress); MemoryReads (memoryReads + 2)]
+        this.AssertCesarState expectedState
+
+        cpu.Memory.Data.[newAddress] <- byte instruction
+        cpu.Memory.Data.[newAddress + 1] <- 253uy
+        Step cpu
+
+        let finalAddress = newAddress + (if branchExpected then -1 else 2)
+        this.AssertCesarState [ProgramCounter (uint16 finalAddress); MemoryReads (memoryReads + 4)]
         this.AssertCesarState expectedState
 
     member this.TestClrGroupOperation(instruction: Instruction, value, expectedResult, expectedState) =
@@ -217,6 +226,80 @@ type CesarTests() =
         this.TestAddressMode(AddressMode.IndexedIndirect)
 
     [<TestMethod>]
+    member this.``Cesar: AddressModes with R7 works as expected``() =
+        cpu.Memory.Data.[0] <- byte Instruction.Not
+        cpu.Memory.Data.[1] <- byte Register.R7 ||| byte AddressMode.Register
+        Step cpu
+        this.AssertCesarState [ProgramCounter 65533us; MemoryReads 2]
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 2us
+        cpu.Memory.Data.[2] <- byte Instruction.Not
+        cpu.Memory.Data.[3] <- byte Register.R7 ||| byte AddressMode.RegPostInc
+        Step cpu
+        this.AssertCesarState [ProgramCounter 6us; MemoryReads 4; MemoryWrites 2]
+        Assert.AreEqual(255uy, cpu.Memory.Data.[4])
+        Assert.AreEqual(255uy, cpu.Memory.Data.[5])
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 6us
+        cpu.Memory.Data.[6] <- byte Instruction.Not
+        cpu.Memory.Data.[7] <- byte Register.R7 ||| byte AddressMode.RegPreDec
+        Step cpu
+        this.AssertCesarState [ProgramCounter 6us; MemoryReads 4; MemoryWrites 2]
+        Assert.AreEqual(126uy, cpu.Memory.Data.[6])
+        Assert.AreEqual(232uy, cpu.Memory.Data.[7])
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 8us
+        cpu.Memory.Data.[8] <- byte Instruction.Not
+        cpu.Memory.Data.[9] <- byte Register.R7 ||| byte AddressMode.Indexed
+        cpu.Memory.Data.[10] <- 0uy
+        cpu.Memory.Data.[11] <- 2uy
+        Step cpu
+        this.AssertCesarState [ProgramCounter 12us; MemoryReads 6; MemoryWrites 2]
+        Assert.AreEqual(255uy, cpu.Memory.Data.[14])
+        Assert.AreEqual(255uy, cpu.Memory.Data.[15])
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 16us
+        cpu.Memory.Data.[16] <- byte Instruction.Not
+        cpu.Memory.Data.[17] <- byte Register.R7 ||| byte AddressMode.RegisterIndirect
+        Step cpu
+        this.AssertCesarState [ProgramCounter 18us; MemoryReads 4; MemoryWrites 2]
+        Assert.AreEqual(255uy, cpu.Memory.Data.[18])
+        Assert.AreEqual(255uy, cpu.Memory.Data.[19])
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 20us
+        cpu.Memory.Data.[20] <- byte Instruction.Not
+        cpu.Memory.Data.[21] <- byte Register.R7 ||| byte AddressMode.RegPostIncIndirect
+        Step cpu
+        this.AssertCesarState [ProgramCounter 24us; MemoryReads 6; MemoryWrites 2]
+        Assert.AreEqual(255uy, cpu.Memory.Data.[0])
+        Assert.AreEqual(255uy, cpu.Memory.Data.[0])
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 24us
+        cpu.Memory.Data.[24] <- byte Instruction.Not
+        cpu.Memory.Data.[25] <- byte Register.R7 ||| byte AddressMode.RegPreDecIndirect
+        Step cpu
+        this.AssertCesarState [ProgramCounter 24us; MemoryReads 6; MemoryWrites 2]
+        Assert.AreEqual(255uy, cpu.Memory.Data.[33079])
+        Assert.AreEqual(255uy, cpu.Memory.Data.[33080])
+
+        Reset cpu
+        cpu.Registers.R.[7] <- 26us
+        cpu.Memory.Data.[26] <- byte Instruction.Not
+        cpu.Memory.Data.[27] <- byte Register.R7 ||| byte AddressMode.IndexedIndirect
+        cpu.Memory.Data.[28] <- 0uy
+        cpu.Memory.Data.[29] <- 2uy
+        Step cpu
+        this.AssertCesarState [ProgramCounter 30us; MemoryReads 8; MemoryWrites 2]
+        Assert.AreEqual(255uy, cpu.Memory.Data.[0])
+        Assert.AreEqual(255uy, cpu.Memory.Data.[1])
+
+    [<TestMethod>]
     member this.``Cesar: NOP does nothing``() =
         cpu.Memory.Data.[0] <- byte Instruction.Nop
         Step cpu
@@ -296,9 +379,25 @@ type CesarTests() =
     member this.``Cesar: JMP changes Program Counter``() =
         cpu.Memory.Data.[0] <- byte Instruction.Jmp
         cpu.Memory.Data.[1] <- byte AddressMode.RegisterIndirect ||| byte Register.R1
-        cpu.Registers.R.[1] <- 123us
+        cpu.Registers.R.[1] <- 10us
         Step cpu
-        this.AssertCesarState [R1 123us; ProgramCounter 123us; MemoryReads 2]
+        this.AssertCesarState [R1 10us; ProgramCounter 10us; MemoryReads 2]
+
+        Reset cpu
+        cpu.Memory.Data.[0] <- byte Instruction.Jmp
+        cpu.Memory.Data.[1] <- byte AddressMode.RegPostIncIndirect ||| byte Register.R7
+        cpu.Memory.Data.[2] <- 0uy
+        cpu.Memory.Data.[3] <- 10uy
+        Step cpu
+        this.AssertCesarState [ProgramCounter 10us; MemoryReads 4]
+
+        Reset cpu
+        cpu.Memory.Data.[0] <- byte Instruction.Jmp
+        cpu.Memory.Data.[1] <- byte AddressMode.RegPostInc ||| byte Register.R7
+        cpu.Memory.Data.[2] <- 0uy
+        cpu.Memory.Data.[3] <- 10uy
+        Step cpu
+        this.AssertCesarState [ProgramCounter 2us; MemoryReads 2]
 
     [<TestMethod>]
     member this.``Cesar: SOB subtracts one and branch``() =
@@ -370,7 +469,7 @@ type CesarTests() =
 
     [<TestMethod>]
     member this.``Cesar: SUB subtracts source from target``() =
-        this.TestMovGroupOperation(Instruction.Sub, 12us, 23us, 23us - 12us, [FlagsNegative false; FlagsCarry false (*!*)])
+        this.TestMovGroupOperation(Instruction.Sub, 12us, 23us, 23us - 12us, [FlagsNegative false; FlagsCarry false])
         Reset cpu
         this.TestMovGroupOperation(Instruction.Sub, 23us, 12us, uint16(65536 + 12 - 23), [FlagsNegative true; FlagsCarry true])
 
@@ -397,3 +496,192 @@ type CesarTests() =
         this.AssertCesarState [FlagsHalted true]
         Step cpu
         this.AssertCesarState [FlagsHalted false]
+
+    [<TestMethod>]
+    member this.``Cesar: AssembleInstruction works as expected``() =
+        Assert.AreEqual([byte Instruction.Nop], AssembleInstruction "NOP")
+        Assert.AreEqual([byte Instruction.Hlt], AssembleInstruction "HLT")
+
+        Assert.AreEqual([byte Instruction.Ccc], AssembleInstruction "CCC")
+        Assert.AreEqual([byte Instruction.Ccc ||| byte Flag.Negative ||| byte Flag.Zero ||| byte Flag.Overflow ||| byte Flag.Carry], AssembleInstruction "CCC NZVC")
+        Assert.AreEqual([byte Instruction.Scc], AssembleInstruction "SCC")
+        Assert.AreEqual([byte Instruction.Scc ||| byte Flag.Zero ||| byte Flag.Carry], AssembleInstruction "SCC ZC")
+
+        Assert.AreEqual([byte Instruction.Br; 0uy], AssembleInstruction "BR 0")
+        Assert.AreEqual([byte Instruction.Bne; 10uy], AssembleInstruction "BNE 10")
+        Assert.AreEqual([byte Instruction.Bne; 246uy], AssembleInstruction "BNE -10")
+        Assert.AreEqual([byte Instruction.Bne; 246uy], AssembleInstruction "BNE 246")
+
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7], AssembleInstruction "JMP R7") // Invalid!
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc], AssembleInstruction "JMP (R7)+")
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect], AssembleInstruction "JMP ((R7)+)")
+
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc; 0uy; 10uy], AssembleInstruction "JMP #10") // Valid, but not useful
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 10uy], AssembleInstruction "JMP 10")
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc; 255uy; 246uy], AssembleInstruction "JMP #-10") // Valid, but not useful
+        Assert.AreEqual([byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 255uy; 246uy], AssembleInstruction "JMP -10")
+
+        Assert.AreEqual([byte Instruction.Sob ||| byte Register.R1; 123uy], AssembleInstruction "SOB R1, 123")
+        Assert.AreEqual([byte Instruction.Sob ||| byte Register.R2; 234uy], AssembleInstruction "SOB R2, 234")
+
+        Assert.AreEqual([byte Instruction.Jsr ||| byte Register.R1; byte Register.R7], AssembleInstruction "JSR R1, R7") // Invalid!
+        Assert.AreEqual([byte Instruction.Jsr ||| byte Register.R2; byte Register.R7 ||| byte AddressMode.RegPostInc], AssembleInstruction "JSR R2, (R7)+")
+        Assert.AreEqual([byte Instruction.Jsr ||| byte Register.R3; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect], AssembleInstruction "JSR R3, ((R7)+)")
+
+        Assert.AreEqual([byte Instruction.Rts ||| byte Register.R4], AssembleInstruction "RTS R4")
+
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Register], AssembleInstruction "NOT R7")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc], AssembleInstruction "NOT (R7)+")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDec], AssembleInstruction "NOT -(R7)")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Indexed; 0uy; 2uy], AssembleInstruction "NOT 2(R7)")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegisterIndirect], AssembleInstruction "NOT (R7)")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect], AssembleInstruction "NOT ((R7)+)")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDecIndirect], AssembleInstruction "NOT (-(R7))")
+        Assert.AreEqual([byte Instruction.Not; byte Register.R7 ||| byte AddressMode.IndexedIndirect; 0uy; 2uy], AssembleInstruction "NOT (2(R7))")
+
+        let g = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Register Register.R1 AddressMode.RegPostInc Register.R2
+        Assert.AreEqual([byte (g >>> 8); byte g], AssembleInstruction "MOV R1, (R2)+")
+
+        let h = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegisterIndirect Register.R1 AddressMode.RegPreDec Register.R2
+        Assert.AreEqual([byte (h >>> 8); byte h], AssembleInstruction "MOV (R1), -(R2)")
+
+        let i = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Indexed Register.R1 AddressMode.RegPostIncIndirect Register.R2
+        Assert.AreEqual([byte (i >>> 8); byte i; 0uy; 10uy], AssembleInstruction "MOV 10(R1), ((R2)+)")
+
+        let j = EncodeInstructionTwoOperand Instruction.Mov AddressMode.IndexedIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
+        Assert.AreEqual([byte (j >>> 8); byte j; 0uy; 10uy; 0uy; 20uy], AssembleInstruction "MOV (10(R1)), (20(R2))")
+
+        let k = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPreDecIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
+        Assert.AreEqual([byte (k >>> 8); byte k; 0uy; 20uy], AssembleInstruction "MOV (-(R1)), (20(R2))")
+
+        Assert.AreEqual([147uy; 193uy; 128uy; 0uy], AssembleInstruction "MOV #32768, R1")
+        Assert.AreEqual([147uy; 193uy; 128uy; 0uy], AssembleInstruction "MOV #-32768, R1")
+        Assert.AreEqual([147uy; 193uy; 255uy; 255uy], AssembleInstruction "MOV #65535, R1")
+        Assert.AreEqual([147uy; 193uy; 255uy; 255uy], AssembleInstruction "MOV #-1, R1")
+
+    [<TestMethod>]
+    member this.``Cesar: DisassembleInstruction works as expected``() =
+        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop])
+        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop + 5uy])
+        Assert.AreEqual("HLT", DisassembleInstruction [byte Instruction.Hlt])
+
+        Assert.AreEqual("CCC", DisassembleInstruction [byte Instruction.Ccc])
+        Assert.AreEqual("CCC NZVC", DisassembleInstruction [byte Instruction.Ccc ||| byte Flag.Negative ||| byte Flag.Zero ||| byte Flag.Overflow ||| byte Flag.Carry])
+        Assert.AreEqual("SCC", DisassembleInstruction [byte Instruction.Scc])
+        Assert.AreEqual("SCC ZC", DisassembleInstruction [byte Instruction.Scc ||| byte Flag.Zero ||| byte Flag.Carry])
+
+        Assert.AreEqual("BR  0", DisassembleInstruction [byte Instruction.Br; 0uy])
+        Assert.AreEqual("BNE 10", DisassembleInstruction [byte Instruction.Bne; 10uy])
+        Assert.AreEqual("BNE 246", DisassembleInstruction [byte Instruction.Bne; 246uy])
+
+        Assert.AreEqual("JMP ?", DisassembleInstruction [byte Instruction.Jmp; byte Register.R7]) // Invalid!
+        Assert.AreEqual("JMP (R7)+", DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc])
+        Assert.AreEqual("JMP ((R7)+)", DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect])
+
+        Assert.AreEqual("SOB R1, 123", DisassembleInstruction [byte Instruction.Sob ||| byte Register.R1; 123uy])
+        Assert.AreEqual("SOB R2, 234", DisassembleInstruction [byte Instruction.Sob ||| byte Register.R2; 234uy])
+
+        Assert.AreEqual("JSR R1, ?", DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R1; byte Register.R7]) // Invalid!
+        Assert.AreEqual("JSR R2, (R7)+", DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R2; byte Register.R7 ||| byte AddressMode.RegPostInc])
+        Assert.AreEqual("JSR R3, ((R7)+)", DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R3; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect])
+
+        Assert.AreEqual("RTS R4", DisassembleInstruction [byte Instruction.Rts ||| byte Register.R4])
+
+        Assert.AreEqual("NOT R7", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Register])
+        Assert.AreEqual("NOT (R7)+", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc])
+        Assert.AreEqual("NOT -(R7)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDec])
+        Assert.AreEqual("NOT 2(R7)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Indexed; 0uy; 2uy])
+        Assert.AreEqual("NOT (R7)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegisterIndirect])
+        Assert.AreEqual("NOT ((R7)+)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect])
+        Assert.AreEqual("NOT (-(R7))", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDecIndirect])
+        Assert.AreEqual("NOT (2(R7))", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.IndexedIndirect; 0uy; 2uy])
+
+        let g = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Register Register.R1 AddressMode.RegPostInc Register.R2
+        Assert.AreEqual("MOV R1, (R2)+", DisassembleInstruction [byte (g >>> 8); byte g])
+
+        let h = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegisterIndirect Register.R1 AddressMode.RegPreDec Register.R2
+        Assert.AreEqual("MOV (R1), -(R2)", DisassembleInstruction [byte (h >>> 8); byte h])
+
+        let i = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Indexed Register.R1 AddressMode.RegPostIncIndirect Register.R2
+        Assert.AreEqual("MOV 10(R1), ((R2)+)", DisassembleInstruction [byte (i >>> 8); byte i; 0uy; 10uy])
+
+        let j = EncodeInstructionTwoOperand Instruction.Mov AddressMode.IndexedIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
+        Assert.AreEqual("MOV (10(R1)), (20(R2))", DisassembleInstruction [byte (j >>> 8); byte j; 0uy; 10uy; 0uy; 20uy])
+
+        let k = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPreDecIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
+        Assert.AreEqual("MOV (-(R1)), (20(R2))", DisassembleInstruction [byte (k >>> 8); byte k; 0uy; 20uy])
+
+    [<TestMethod>]
+    member this.``Cesar: AssembleProgram works as expected``() =
+        let program = """
+            MOV #10, R1
+            MOV 1000, R2
+            MOV :L1, R3
+            MOV :L2, R4
+            MOV :L2, R5
+        :L1
+            HLT              ; End of program
+            NOP
+            NOP
+            BR :L1           ; Test branch/jump backwards
+            JMP :L1
+            BR :L3           ; Test branch/jump forward
+            JMP :L3
+            NOP
+            NOP
+        :L3
+            JMP :L2
+        @1000
+            0                ; R2 value
+            123
+        :L2
+            1234             ; R4,R5 value
+        """
+
+        let expectedProgram = [|147uy;193uy;0uy;10uy;          // MOV #10, R1
+                                155uy;194uy;3uy;232uy;         // MOV 1000, R2
+                                155uy;195uy;0uy;20uy;          // MOV :L1, R3     (:L1 = 20)
+                                155uy;196uy;3uy;234uy;         // MOV :L2, R4     (:L2 = 1002)
+                                155uy;197uy;3uy;234uy;         // MOV :L2, R5
+                                240uy;                         // HLT
+                                0uy;                           // NOP
+                                0uy;                           // NOP
+                                48uy;251uy;                    // BR :L1          (-5)
+                                64uy;47uy;0uy;20uy;            // JMP :L1
+                                48uy;6uy;                      // BR :L3          (6)
+                                64uy;47uy;0uy;37uy;            // JMP :L3         (:L3 = 37)
+                                0uy;                           // NOP
+                                0uy;                           // NOP
+                                64uy;47uy;3uy;234uy;|]         // JMP :L2
+
+        let expectedData = [|0uy;123uy;4uy;210uy|]
+
+        AssembleProgram cpu program
+        let programArea = Array.sub cpu.Memory.Data 0 41
+        Assert.AreEqual(0, Array.compareWith (fun a b -> if a = b then 0 else 1) expectedProgram programArea)
+
+        let dataArea = Array.sub cpu.Memory.Data 1000 4
+        Assert.AreEqual(0, Array.compareWith (fun a b -> if a = b then 0 else 1) expectedData dataArea)
+
+        Step cpu
+        Step cpu
+        Step cpu
+        Step cpu
+        Step cpu
+        Step cpu
+        this.AssertCesarState [R1 10us; R2 123us; R3 61440us; R4 1234us; R5 1234us; ProgramCounter 21us; FlagsHalted true]
+
+    [<TestMethod>]
+    [<ExpectedException(typeof<System.Exception>, "Label indefinido: L1")>]
+    member this.``Cesar: AssembleProgram fails with undeclared label``() =
+        AssembleProgram cpu "JMP :L1"
+
+    [<TestMethod>]
+    [<ExpectedException(typeof<System.Exception>, "Label inacessível a partir de um branch: L1")>]
+    member this.``Cesar: AssembleProgram fails with far branches``() =
+        AssembleProgram cpu """
+            BR :L1
+        @1000
+        :L1
+            HLT
+        """

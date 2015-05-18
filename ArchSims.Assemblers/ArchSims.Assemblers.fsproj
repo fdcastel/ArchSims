@@ -54,6 +54,7 @@
     <Compile Include="RamsesAssembler.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
+    <Compile Include="CesarAssembler.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FParsec">

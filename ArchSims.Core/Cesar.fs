@@ -317,8 +317,8 @@ module Cesar =
         | Instruction.Br ->   // Branches group
             let branchIf condition = 
                 if condition then
-                    let branchOperand = uint16 cpu.Registers.InstructionRegister.Data.[1]
-                    cpu.Registers.R.[7] <- cpu.Registers.R.[7] + branchOperand
+                    let branchOperand = int8 cpu.Registers.InstructionRegister.Data.[1]
+                    cpu.Registers.R.[7] <- cpu.Registers.R.[7] + (uint16 branchOperand)
 
             let subInstruction = Instruction.Br ||| LanguagePrimitives.EnumOfValue (firstOpCode &&& SubInstructionMask)
             match subInstruction with
