@@ -498,6 +498,51 @@ type CesarTests() =
         this.AssertCesarState [FlagsHalted false]
 
     [<TestMethod>]
+    member this.``Cesar: Display memory area addresses works at byte level``() =
+        // Reads from memory area
+        cpu.Memory.Data.[0] <- 48uy    // BR 8 
+        cpu.Memory.Data.[1] <- 8uy
+        cpu.Memory.Data.[65499] <- 123uy
+        cpu.Memory.Data.[65500] <- 234uy
+        cpu.Memory.Data.[65535] <- 100uy
+        Step cpu
+
+        cpu.Memory.Data.[10] <- 155uy  // MOV 0, R0
+        cpu.Memory.Data.[11] <- 192uy
+        cpu.Memory.Data.[12] <- 0uy
+        cpu.Memory.Data.[13] <- 0uy
+        Step cpu
+        this.AssertCesarState [R0 12296us]
+
+        cpu.Memory.Data.[14] <- 155uy  // MOV 65534, R1
+        cpu.Memory.Data.[15] <- 193uy
+        cpu.Memory.Data.[16] <- 255uy
+        cpu.Memory.Data.[17] <- 254uy
+        Step cpu
+        this.AssertCesarState [R1 0us]
+
+        cpu.Memory.Data.[18] <- 155uy  // MOV 65535, R2
+        cpu.Memory.Data.[19] <- 194uy
+        cpu.Memory.Data.[20] <- 255uy
+        cpu.Memory.Data.[21] <- 255uy
+        Step cpu
+        this.AssertCesarState [R2 100us]
+
+        cpu.Memory.Data.[22] <- 155uy  // MOV 65500, R3
+        cpu.Memory.Data.[23] <- 195uy
+        cpu.Memory.Data.[24] <- 255uy
+        cpu.Memory.Data.[25] <- 220uy
+        Step cpu
+        this.AssertCesarState [R3 234us]
+
+        cpu.Memory.Data.[26] <- 155uy  // MOV 65499, R4
+        cpu.Memory.Data.[27] <- 196uy
+        cpu.Memory.Data.[28] <- 255uy
+        cpu.Memory.Data.[29] <- 219uy
+        Step cpu
+        this.AssertCesarState [R4 123us]         // ??
+
+    [<TestMethod>]
     member this.``Cesar: AssembleInstruction works as expected``() =
         Assert.AreEqual([byte Instruction.Nop], AssembleInstruction "NOP")
         Assert.AreEqual([byte Instruction.Hlt], AssembleInstruction "HLT")
@@ -624,8 +669,10 @@ type CesarTests() =
             NOP
             NOP
             BR :L1           ; Test branch/jump backwards
+            SOB R1, :L1
             JMP :L1
             BR :L3           ; Test branch/jump forward
+            SOB R3, :L3
             JMP :L3
             NOP
             NOP
@@ -647,9 +694,11 @@ type CesarTests() =
                                 0uy;                           // NOP
                                 0uy;                           // NOP
                                 48uy;251uy;                    // BR :L1          (-5)
+                                81uy;7uy;                      // SOB R1, :L1     (7)
                                 64uy;47uy;0uy;20uy;            // JMP :L1
-                                48uy;6uy;                      // BR :L3          (6)
-                                64uy;47uy;0uy;37uy;            // JMP :L3         (:L3 = 37)
+                                48uy;8uy;                      // BR :L3          (8)
+                                83uy;250uy;                    // SOB R3, :L3     (-6)
+                                64uy;47uy;0uy;41uy;            // JMP :L3         (:L3 = 41)
                                 0uy;                           // NOP
                                 0uy;                           // NOP
                                 64uy;47uy;3uy;234uy;|]         // JMP :L2
@@ -657,7 +706,7 @@ type CesarTests() =
         let expectedData = [|0uy;123uy;4uy;210uy|]
 
         AssembleProgram cpu program
-        let programArea = Array.sub cpu.Memory.Data 0 41
+        let programArea = Array.sub cpu.Memory.Data 0 45
         Assert.AreEqual(0, Array.compareWith (fun a b -> if a = b then 0 else 1) expectedProgram programArea)
 
         let dataArea = Array.sub cpu.Memory.Data 1000 4

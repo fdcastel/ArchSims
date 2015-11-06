@@ -163,10 +163,10 @@ module CesarAssembler =
 
     let EncodeInstruction instructionType getReferenceFunc =
 
-        let decodeBranchOperand branchOperand =
+        let decodeBranchOperand branchOperand isSob =
             match branchOperand with
             | BranchLiteral b -> byte b
-            | BranchLabel l -> byte (getReferenceFunc l 1uy)
+            | BranchLabel l -> byte (getReferenceFunc l 1uy isSob)
 
         let decodeOperand operand labelOffset =
             match operand with
@@ -174,7 +174,7 @@ module CesarAssembler =
             | RegisterModeIndex (r, m, ind) -> r, m, Some (uint16 ind)
             | Direct a -> Register.R7, AddressMode.RegPostIncIndirect, Some (uint16 a)
             | Immediate c -> Register.R7, AddressMode.RegPostInc, Some (uint16 c)
-            | ReferenceLabel l -> Register.R7, AddressMode.RegPostIncIndirect, Some (getReferenceFunc l labelOffset)
+            | ReferenceLabel l -> Register.R7, AddressMode.RegPostIncIndirect, Some (getReferenceFunc l labelOffset false)
 
         match instructionType with
         | InstructionType.Simple i -> [byte i]
@@ -187,7 +187,7 @@ module CesarAssembler =
             [byte i ||| byte flags]
 
         | InstructionType.BranchOnly (i, o) -> 
-            [byte i; decodeBranchOperand o]
+            [byte i; decodeBranchOperand o false]
 
         | InstructionType.JumpOnly (i, o) -> 
             let r, m, a = decodeOperand o 2uy
@@ -197,7 +197,7 @@ module CesarAssembler =
             | None -> [byte (result >>> 8); byte result]
             
         | InstructionType.RegisterAndBranch (i, r, o) ->
-            [byte i ||| byte r; decodeBranchOperand o]
+            [byte i ||| byte r; decodeBranchOperand o true]
 
         | InstructionType.RegisterAndJump (i, rj, o) ->
             let r, m, a = decodeOperand o 2uy
@@ -232,21 +232,21 @@ module CesarAssembler =
         
     let AssembleInstruction input =
         match run pInstruction_ input with
-        | Success(result, _, _)   -> EncodeInstruction result (fun l _ -> 0us)
+        | Success(result, _, _)   -> EncodeInstruction result (fun l _ _ -> 0us)
         | Failure(errorMsg, _, _) -> failwith errorMsg
 
-    type DeferredAddress = uint16 * byte // Label address and its relative position (offset) within the instruction
+    type DeferredAddress = uint16 * byte * bool // Label address, its relative position (offset) within the instruction, isSob
 
     let AssembleProgram cpu input =
         let mutable address = 0
         let labels = new Dictionary<string, uint16>()
         let deferredLabels = new Dictionary<string, List<DeferredAddress>>()
 
-        let getLabelAddress label offset =
+        let getLabelAddress label offset isSob =
             match labels.TryGetValue(label) with
             | true, labelValue -> 
                 if offset = 1uy then                    // Offset = 1: Branch instruction.
-                    let delta = int labelValue - (address + 2)
+                    let delta = (int labelValue - (address + 2)) * (if isSob then -1 else 1)
                     if delta < -128 || delta > 127 then
                         failwith (sprintf "Label inacessível a partir de um branch: %s" label)
                     uint16 delta
@@ -254,7 +254,7 @@ module CesarAssembler =
                     labelValue
             | _ ->
                 // Label reference used before its definition. Defer this address... (*)                
-                let newValue = (uint16 address, offset)
+                let newValue = (uint16 address, offset, isSob)
                 match deferredLabels.TryGetValue(label) with
                 | true, deferredValues -> deferredValues.Add(newValue)
                 | _ -> 
@@ -271,9 +271,9 @@ module CesarAssembler =
                 match deferredLabels.TryGetValue(label) with
                 | true, deferredValues -> 
                     // (*) ...and fix it now, when we have the value
-                    for (a, o) in deferredValues do
+                    for (a, o, is) in deferredValues do
                         if o = 1uy then                    // Offset = 1: Branch instruction.
-                            let delta = int value - (int a + 2)
+                            let delta = (int value - (int a + 2)) * (if is then -1 else 1)
                             if delta < -128 || delta > 127 then
                                 failwith (sprintf "Label inacessível a partir de um branch: %s" label)
                             cpu.Memory.Data.[int a + int o] <- byte delta
