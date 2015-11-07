@@ -55,6 +55,9 @@
     <Compile Include="NeanderTests.fs" />
     <Compile Include="RamsesTests.fs" />
     <Compile Include="CesarTests.fs" />
+    <EmbeddedResource Include="RamsesEmulator.Cesar.txt" />
+    <Compile Include="RamsesEmulator.fs" />
+    <Compile Include="RamsesEmulatorTests.fs" />
     <Content Include="app.config" />
   </ItemGroup>
   <ItemGroup>

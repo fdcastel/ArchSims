@@ -42,4 +42,7 @@ COPY .\ArchSims.CmdLine\bin\Release\ArchSims.CmdLine.exe.config %OUT_DIR% > NUL
 COPY .\ArchSims.CmdLine\bin\Release\ArchSims.CmdLine.exe.config %OUT_DIR%\Ramses.exe.config > NUL
 COPY .\ArchSims.CmdLine\bin\Release\ArchSims.CmdLine.exe.config %OUT_DIR%\Cesar.exe.config > NUL
 
+COPY .\ArchSims.Tests\RamsesEmulator.Cesar.txt %OUT_DIR%\ > NUL
+%OUT_DIR%\Cesar.exe %OUT_DIR%\RamsesEmulator.Cesar.txt -Save %OUT_DIR%\RamsesEmulator.Cesar.mem > NUL
+
 ENDLOCAL

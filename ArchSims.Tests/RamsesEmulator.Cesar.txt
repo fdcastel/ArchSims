@@ -1,0 +1,600 @@
+;
+; Ramses Emulator
+;   F.D.Castel -- Nov'2015
+;
+; Usage: 
+;
+;   - Load this program in Cesar.
+;   - Run it once. It will stop at :Step command.
+;   - Load Ramses program in guest memory area [0..255].
+;   - Set R7(PC) to address of desired command (see below).
+;   - Run it. Each command will stop with a HLT.
+;
+;
+; Commands:
+;   @300: Step
+;   @400: Run
+;   @500: Reset
+;
+;
+; You can also change the following settings:
+;
+; Output type:    (word @ 290)
+;   0: None: no output (fastest)
+;   1: Registers: output to Cesar registers / flags (slower)
+;   2: Display: output to register and display area (slowest)
+;
+;
+; Share and enjoy!
+;
+
+        JMP :Reset                     ; Initial bootstrap
+
+                                       ; [0..255] Guest memory area
+@256                                
+    :Ra
+        0                              ; [256] Ra value
+        0
+    :Rb
+        0                              ; [258] Rb value
+        0
+    :Rx
+        0                              ; [260] Rx value
+        0
+    :Pc
+        0                              ; [262] Pc value
+        0
+    :IrOpCode
+        0                              ; [264] Ir OpCode
+        0
+    :IrOperand
+        0                              ; [266] Ir OperandAddress
+        0
+    :Halted
+        0                              ; [268] Flags: Halted
+        0
+    :Negative
+        0                              ; [270] Flags: Negative
+        0
+    :Zero
+        0                              ; [272] Flags: Zero
+        1
+    :Carry
+        0                              ; [274] Flags: Carry
+        0
+
+@290
+    :OutputType
+        0                              ; [290] 0: None, 1: Registers, 2: Registers + Display (very slow!)
+        2
+
+@298
+    :HaltAtStep
+        NOP
+        HLT
+    :Step                              ; [300] Step
+        JSR R7, :InnerStep
+        JSR R7, :UpdateOutput
+        BR :HaltAtStep
+
+@398
+    :HaltAtRun
+        NOP
+        HLT
+    :Run                               ; [400] Run
+        MOV #0, :Halted
+    :YetRunning
+        JSR R7, :InnerStep
+        JSR R7, :UpdateOutput
+        TST :Halted
+        BEQ :YetRunning
+        BR :HaltAtRun
+
+@500
+    :Reset                             ; [500] Reset
+        MOV #10000, R6                 ; Setup Stack pointer
+
+        MOV #274, R0                   ; Clear memory, flags and registers
+    :ClearMemory
+        MOV #0, (R0)
+        DEC R0
+        SOB R0, :ClearMemory
+        MOV #0, 0
+
+        MOV #1, :Zero                  ; Set Zero flag
+        JSR R7, :UpdateOutput
+        JMP :HaltAtStep
+
+@600
+    :InnerStep
+
+    ; --- Fetch ---
+
+        MOV :Pc, R0                    ; R0 <- [Pc]
+
+        MOV (R0), :MapByteIn           ; R1 <- [Ir.OpCode]
+        MOV :MapByteOut, R1
+        INC R0                         ; Inc [Pc]
+
+        MOV #0, R2                     ; R2 <- [Ir.OperandAddress]
+            
+        MOV R1, R3                     ; R3 <- [instruction]  (Ir.OpCode & 0xF0)
+        AND #0xF0, R3
+
+        MOV R1, R4                     ; R4 <- [addressMode]  (Ir.OpCode & 0x03)
+        AND #0x03, R4
+
+        CMP R3, #0x00                  ; NOP, NOT, NEG, SHR, HLT: without operand
+        BEQ :NoOperand
+        CMP R3, #0x60
+        BEQ :NoOperand
+        CMP R3, #0xD0
+        BGE :NoOperand
+
+        TST R4                         ; With operand: Decode address mode
+        BEQ :Direct
+        DEC R4
+        BEQ :Indirect
+        DEC R4
+        BEQ :Immediate
+        DEC R4
+        BEQ :Indexed
+        JMP :Error                     ; Invalid address mode (?!)
+
+    :Direct
+        MOV (R0), :MapByteIn           ; [Ir.OperandAddress] <- MEM([Pc])
+        MOV :MapByteOut, R2
+        INC R0                         ; Inc [Pc]
+        BR :NoOperand
+
+    :Indirect
+        MOV (R0), :MapByteIn           ; [Ir.OperandAddress] <- MEM(MEM([Pc]))
+        MOV :MapByteOut, R2
+        MOV (R2), :MapByteIn
+        MOV :MapByteOut, R2
+        INC R0                         ; Inc [Pc]
+        BR :NoOperand
+
+    :Immediate
+        CMP R3, #0x80                  ; IF instruction >= JMP
+        BGE :Direct                    ;     [Ir.OperandAddress] <- MEM([Pc])
+                                       ; ELSE
+        MOV R0, R2                     ;     [Ir.OperandAddress] <- [Pc]
+        INC R0                         ; Inc [Pc]
+        BR :NoOperand
+
+    :Indexed
+        MOV (R0), :MapByteIn           ; [Ir.OperandAddress] <- MEM([Pc]) + [Rx]
+        MOV :MapByteOut, R2
+        ADD :Rx, R2
+        INC R0                         ; Inc [Pc]
+
+    :NoOperand
+        MOV R0, :Pc                    ; [Pc] <- R0
+        MOV R1, :IrOpCode              ; [Ir.OpCode] <- R1
+        MOV R2, :IrOperand             ; [Ir.OperandAddress] <- R2
+
+
+
+    ; --- Execute ---
+
+        MOV R1, R4                     ; R4 <- [register]   (Ir.OpCode & 0x0C)
+        AND #0x0C, R4
+
+        ASR R4                         ; R4 <- register address
+        ADD #256, R4                   ; (256: registers area)
+
+        ASR R3                         ; Decode instruction
+        ASR R3
+        ASR R3
+        ASR R3
+        BEQ :Nop
+        DEC R3
+        BEQ :Str
+        DEC R3
+        BEQ :Ldr
+        DEC R3
+        BEQ :Add
+        DEC R3
+        BEQ :Or
+        DEC R3
+        BEQ :And
+        DEC R3
+        BEQ :Not
+        DEC R3
+        BEQ :Sub
+        DEC R3
+        BEQ :Jmp
+        DEC R3
+        BEQ :Jn
+        DEC R3
+        BEQ :Jz
+        DEC R3
+        BEQ :Jc
+        DEC R3
+        BEQ :Jsr
+        DEC R3
+        BEQ :Neg
+        DEC R3
+        BEQ :Shr
+        DEC R3
+        BEQ :Hlt
+        JMP :Error                     ; Invalid instruction (?!)
+
+    :Nop
+        MOV #0, :Halted
+        RTS R7
+
+    :Str
+        JMP :StrFar
+
+    :Ldr
+        JMP :LdrFar
+
+    :Add
+        JMP :AddFar
+
+    :Or
+        JMP :OrFar
+
+    :And
+        JMP :AndFar
+
+    :Not
+        JMP :NotFar
+
+    :Sub
+        JMP :SubFar
+
+    :Jmp
+        JMP :JmpFar
+
+    :Jn
+        JMP :JnFar
+
+    :Jz
+        JMP :JzFar
+
+    :Jc
+        JMP :JcFar
+
+    :Jsr
+        JMP :JsrFar
+
+    :Neg
+        JMP :NegFar
+
+    :Shr
+        JMP :ShrFar
+
+    :Hlt
+        MOV #1, :Halted
+        RTS R7
+            
+
+
+    ; --- Instructions microcode ---
+
+    ; --- JnFar, JzFar and JcFar are here (out of order) to reach :Nop from a branch operation
+
+    :JnFar
+        TST :Negative                  ; IF [N] = 1 [Pc] <- [Ir.OperandAddress]
+        BEQ :Nop
+        MOV R2, :Pc                 
+        BR :Nop
+
+    :JzFar
+        TST :Zero                      ; IF [Z] = 1 [Pc] <- [Ir.OperandAddress]
+        BEQ :Nop
+        MOV R2, :Pc
+        BR :Nop
+
+    :JcFar
+        TST :Carry                     ; IF [C] = 1 [Pc] <- [Ir.OperandAddress]
+        BEQ :Nop
+        MOV R2, :Pc                 
+        BR :Nop
+
+    ; --- Farther point from :Nop reachable by a branch operation
+
+    :StrFar
+        MOV (R4), R3                   ; MEM([Ir.OperandAddress]) <- [register]
+        MOV R2, R4
+        JSR R7, :WriteMemory
+        JMP :Nop
+
+    :LdrFar
+        MOV (R2), :MapByteIn           ; [register] <- MEM([Ir.OperandAddress])
+        MOV :MapByteOut, R3
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :AddFar
+        MOV (R2), :MapByteIn           ; [register] <- [register] + MEM([Ir.OperandAddress])
+        MOV :MapByteOut, R5            ; R5 <- MEM([Ir.OperandAddress])
+        MOV (R4), R3                   ; R3 <- [register]
+        ADD R5, R3
+        CMP R3, #0xFF
+        BGT :AddHasCarry               ; Carry <- (value > 0xFF)
+        MOV #0, :Carry
+        BR :AddFinish
+    :AddHasCarry
+        MOV #1, :Carry
+    :AddFinish
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :OrFar
+        MOV (R2), :MapByteIn           ; [register] <- [register] OR MEM([Ir.OperandAddress])
+        MOV :MapByteOut, R5            ; R5 <- MEM([Ir.OperandAddress])
+        MOV (R4), R3                   ; R3 <- [register]
+        OR R5, R3
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :AndFar
+        MOV (R2), :MapByteIn           ; [register] <- [register] AND MEM([Ir.OperandAddress])
+        MOV :MapByteOut, R5            ; R5 <- MEM([Ir.OperandAddress])
+        MOV (R4), R3                   ; R3 <- [register]
+        AND R5, R3
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :NotFar
+        MOV (R4), R3                   ; R3 <- [register]
+        NOT R3                         ; ~R3
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :SubFar
+        MOV (R2), :MapByteIn           ; [register] <- [register] + 256 - MEM([Ir.OperandAddress])
+        MOV :MapByteOut, R5            ; R5 <- MEM([Ir.OperandAddress])
+        MOV (R4), R3                   ; R3 <- [register]
+        ADD #0x100, R3
+        SUB R5, R3
+        CMP R3, #0xFF
+        BLE :SubHasCarry               ; Carry <- (value <= 0xFF)
+        MOV #0, :Carry
+        BR :SubFinish
+    :SubHasCarry
+        MOV #1, :Carry
+    :SubFinish
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :JmpFar
+        MOV R2, :Pc                    ; [Pc] <- [Ir.OperandAddress]
+        JMP :Nop
+
+    :JsrFar
+        MOV R0, R3                     ; MEM([Ir.OperandAddress]) <- [Pc]
+        MOV R2, R4
+        JSR R7, :WriteMemory
+
+        INC R2                         ; [Pc] <- [Ir.OperandAddress] + 1
+        MOV R2, :Pc
+        JMP :Nop
+
+    :NegFar
+        MOV (R4), R3                   ; R3 <- [register]
+        NOT R3                         ; ~R3 + 1
+        INC R3
+        BEQ :NegHasCarry               ; Carry <- (value = 0)
+        MOV #0, :Carry
+        BR :NegFinish
+    :NegHasCarry
+        MOV #1, :Carry
+    :NegFinish
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+    :ShrFar
+        MOV (R4), R3                   ; R3 <- [register]
+        ASR R3                         ; R3 >> 1
+        BCS :ShrHasCarry               ; Carry <- (value & 1 <> 0)
+        MOV #0, :Carry
+        BR :ShrFinish
+    :ShrHasCarry
+        MOV #1, :Carry
+    :ShrFinish
+        JSR R7, :WriteRegister
+        JMP :Nop
+
+
+
+    ; --- Execute subroutines ---
+    :WriteRegister
+        AND #0xFF, R3                  ; R3: Value to write
+        MOV R3, (R4)                   ; R4: register address
+    :UpdateZero
+        BEQ :IsZero
+        MOV #0, :Zero
+        BR :UpdateNegative
+    :IsZero
+        MOV #1, :Zero
+    :UpdateNegative
+        CMP R3, #0x7F
+        BGT :IsNegative
+        MOV #0, :Negative
+        RTS R7
+    :IsNegative
+        MOV #1, :Negative
+        RTS R7
+
+    :WriteMemory
+        ; R3: Value to write
+        ; R4: memory address (byte)
+
+        ; Preserves the value at [R4 + 1] (Cesar writes in 16-bit)
+        MOV (R4), :MapByteIn
+        AND #0xFF, R3
+        MOV R3, :MapByteOut
+        MOV :MapByteIn, (R4)
+        RTS R7
+
+
+
+    ; --- Output subroutines ---
+    :UpdateOutput
+        CMP :OutputType, #1
+        BGT :OutputToDisplay           ; 2: Registers and display
+        BEQ :OutputToRegisters         ; 1: Registers only
+        RTS R7                         ; 0: No output
+
+    :OutputToRegisters
+        MOV 0x100, R0                  ; Ra
+        MOV 0x102, R1                  ; Rb
+        MOV 0x104, R2                  ; Rx
+        MOV 0x106, R3                  ; Pc
+
+        MOV :Negative, R4              ; Encode :SetFlags instruction
+        ASL R4
+        OR :Zero, R4
+        ASL R4
+        ASL R4
+        OR :Carry, R4
+        OR #0x1D20, R4                 ; 0x1F: CCC NZVC
+                                       ; 0x20: SCC
+        MOV R4, :SetFlags              ; Write instructions (!)
+
+        MOV #0, R4                     ; Clear remaining registers
+        MOV #0, R5
+
+    :SetFlags                          ; Self modifying code (!)
+        NOP                            ; CCC NZVC
+        NOP                            ; SCC <flags>
+
+        RTS R7
+
+    :OutputToDisplay
+        MOV 0x100, R0                  ; Ra
+        MOV #0xFFE0, R1
+        JSR R7, :PrintByte
+
+        MOV 0x102, R0                  ; Rb
+        MOV #0xFFE8, R1
+        JSR R7, :PrintByte
+
+        MOV 0x104, R0                  ; Rx
+        MOV #0xFFF0, R1
+        JSR R7, :PrintByte
+
+        MOV 0x106, R0                  ; Pc
+        MOV #0xFFF8, R1
+        JSR R7, :PrintByte
+
+    :TestHalted
+        TST :Halted
+        BNE :PrintHalted
+        MOV #0x00, 0xFFFC
+        BR :TestNegative
+    :PrintHalted
+        MOV #0x48, 0xFFFC              ; H
+
+    :TestNegative
+        TST :Negative
+        BNE :PrintNegative
+        MOV #0x00, 0xFFFD
+        BR :TestZero
+    :PrintNegative
+        MOV #0x4E, 0xFFFD              ; N
+
+    :TestZero
+        TST :Zero
+        BNE :PrintZero
+        MOV #0x00, 0xFFFE
+        BR :TestCarry
+    :PrintZero
+        MOV #0x5A, 0xFFFE              ; Z
+
+    :TestCarry
+        TST :Carry
+        BNE :PrintCarry
+        MOV #0x00, 0xFFFF
+        JMP :OutputToRegisters
+    :PrintCarry
+        MOV #0x43, 0xFFFF              ; C
+        JMP :OutputToRegisters
+
+    :PrintByte
+        ;R0: Value
+        ;R1: Memory area address
+        MOV R0, R2
+        AND #0xFF, R2
+        ASR R2
+        ASR R2
+        ASR R2
+        ASR R2
+        CMP R2, #10
+        BLT :IsNumber1
+        ADD #7, R2
+    :IsNumber1
+        ADD #0x30, R2
+        MOV R2,(R1)
+        INC R1
+        MOV R0, R2
+        AND #0x0F, R2
+        CMP R2, #10
+        BLT :IsNumber2
+        ADD #7, R2
+    :IsNumber2
+        ADD #0x30, R2
+        MOV R2,(R1)
+        RTS R7
+
+
+
+    ; --- Utilities ---
+
+    :MapByteOut
+        NOP                            ; Used to map word -> byte in memory reads
+    :MapByteIn
+        NOP
+        NOP
+
+
+
+    ; --- End of program ---
+
+@65000
+    :Error
+        HLT                            ; Stops here in case of error
+
+@65500
+    :Display
+        0x52                           ; R
+        0x41                           ; A
+        0x3A                           ; :
+        0x00
+        0x30                           ; 0
+        0x30                           ; 0
+        0x00
+        0x00
+        0x52                           ; R
+        0x42                           ; B
+        0x3A                           ; :
+        0x00
+        0x30                           ; 0
+        0x30                           ; 0
+        0x00
+        0x00
+        0x52                           ; R
+        0x58                           ; X
+        0x3A                           ; :
+        0x00
+        0x30                           ; 0
+        0x30                           ; 0
+        0x00
+        0x00
+        0x50                           ; P
+        0x43                           ; C
+        0x3A                           ; :
+        0x00
+        0x30                           ; 0
+        0x30                           ; 0
+        0x00
+        0x00
+        0x00
+        0x00
+        0x5A                           ; Z
+        0x00
