@@ -1,7 +1,10 @@
-﻿namespace Ufrgs.Inf.ArchSims.Runners
+﻿namespace Ufrgs.Inf.ArchSims.CmdLine
 
 open System
+open System.IO
 open System.Text.RegularExpressions
+
+open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Common =
 
@@ -21,12 +24,25 @@ module Common =
     | Decimal
     | Hexadecimal
 
-    type CommonOptions = {
-        FileName: string
+    type RunOptions = {
+        SourceFileName: string
+
         ExecutionMode: ExecutionMode
         OutputFormat: OutputFormat
         Speed: int option
     }
+
+    type SaveOptions = {
+        SourceFileName: string
+        TargetFileName: string
+    }
+
+    type Action =
+    | Run of RunOptions
+    | Save of SaveOptions
+
+
+    // Utility functions
 
     let (|IgnoreCase|_|) s1 s2 = 
         if String.Compare(s1, s2, StringComparison.OrdinalIgnoreCase) = 0 then
@@ -66,17 +82,15 @@ module Common =
         | IgnoreCase "Decimal"
         | _ -> OutputFormat.Decimal
 
+    let MemorySaveToFile memory (prefix: byte list) fileName =
+        use file = File.Open(fileName, FileMode.Create)
+        use writer = new BinaryWriter(file);
+        writer.Write(List.toArray prefix);
+        writer.Write(memory.Data);
 
 
-    // Source: http://www.fssnip.net/8g
 
-    // The snippet shows a parser for command-line arguments supporting value lists for single commands. 
-
-    // Calling with the following arguments: "Arg 1" "Arg 2" -test "Case 1" "Case 2" -show -skip "tag" 
-    // produces the following map: map [("", seq ["Arg 1"; "Arg 2"]); ("show", seq []); ("skip", seq ["tag"]);("test", seq ["Case 1"; "Case 2"])] 
-    // which can be used to find what data have been sent along with different commands. 
-    
-    // Calling with the following: "Arg 1" "Arg 2" /test="Case 1" "Case 2" --show /skip:tag produces the same result.
+    // Simple command-line argument parser -- Source: http://www.fssnip.net/8g
 
     let (|Command|_|) (s:string) =
         let r = new Regex(@"^(?:-{1,2}|\/)(?<command>\w+)[=:]*(?<value>.*)$",RegexOptions.IgnoreCase)

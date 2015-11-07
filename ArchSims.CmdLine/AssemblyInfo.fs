@@ -1,4 +1,4 @@
-﻿namespace ArchSims.Runners.AssemblyInfo
+﻿namespace ArchSims.CmdLine.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,11 +7,11 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("ArchSims.Runners")>]
+[<assembly: AssemblyTitle("ArchSims.CmdLine")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("ArchSims.Runners")>]
+[<assembly: AssemblyProduct("ArchSims.CmdLine")>]
 [<assembly: AssemblyCopyright("Copyright © R.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]

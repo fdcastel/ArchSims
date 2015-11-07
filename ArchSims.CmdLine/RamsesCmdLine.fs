@@ -1,4 +1,4 @@
-﻿namespace Ufrgs.Inf.ArchSims.Runners
+﻿namespace Ufrgs.Inf.ArchSims.CmdLine
 
 open System
 open System.IO
@@ -6,9 +6,9 @@ open System.IO
 open Ufrgs.Inf.ArchSims.Core.Debugger
 open Ufrgs.Inf.ArchSims.Core.Ramses
 open Ufrgs.Inf.ArchSims.Assemblers.RamsesAssembler
-open Ufrgs.Inf.ArchSims.Runners.Common
+open Ufrgs.Inf.ArchSims.CmdLine.Common
 
-module RamsesRunner =
+module RamsesCmdLine =
 
     let Run options =
         let printCpu cpu = 
@@ -44,7 +44,7 @@ module RamsesRunner =
                                                  printCpu cpu
                                                  cpu.Registers.Flags.Halted)
 
-        AssembleProgram cpu (File.ReadAllText options.FileName)
+        AssembleProgram cpu (File.ReadAllText options.SourceFileName)
         printCpu cpu
         DebuggerRun debugger 1000
         let stopReason = match debugger.LastStop with
@@ -53,5 +53,16 @@ module RamsesRunner =
                          | DebuggerStopReason.RunningForever -> "Running forever..."
                          | _ -> ""
 
+        printfn ""
         printfn "Finished: %s" stopReason
+
+    let Save options =
+        let cpu = CreateCpu()
+        AssembleProgram cpu (File.ReadAllText options.SourceFileName)
+        MemorySaveToFile cpu.Memory [0x03uy; 0x52uy; 0x4Duy; 0x53uy] (* ^CRMS *) options.TargetFileName
+
+    let Execute action =
+        match action with
+        | Run options -> Run options
+        | Save options -> Save options
 

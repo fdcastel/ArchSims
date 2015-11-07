@@ -8,11 +8,11 @@
     <ProjectGuid>4a14125e-057e-424d-8859-e1212c58ce08</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>ArchSims.Runner</RootNamespace>
-    <AssemblyName>ArchSims.Runners</AssemblyName>
+    <AssemblyName>ArchSims.CmdLine</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
-    <Name>ArchSims.Runners</Name>
+    <Name>ArchSims.CmdLine</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -59,8 +59,8 @@
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="app.config" />
     <Compile Include="Common.fs" />
-    <Compile Include="RamsesRunner.fs" />
-    <Compile Include="CesarRunner.fs" />
+    <Compile Include="RamsesCmdLine.fs" />
+    <Compile Include="CesarCmdLine.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>

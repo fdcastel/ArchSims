@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.Tests", "ArchSims.Tests\ArchSims.Tests.fsproj", "{A825222E-01EF-4D63-80B9-C32CE4DA3C65}"
 EndProject
@@ -9,7 +9,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.Assemblers", "Arch
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.Core", "ArchSims.Core\ArchSims.Core.fsproj", "{02D81604-F01F-493E-A370-EAE4EC7F6704}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.Runners", "ArchSims.Runners\ArchSims.Runners.fsproj", "{4A14125E-057E-424D-8859-E1212C58CE08}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ArchSims.CmdLine", "ArchSims.CmdLine\ArchSims.CmdLine.fsproj", "{4A14125E-057E-424D-8859-E1212C58CE08}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
