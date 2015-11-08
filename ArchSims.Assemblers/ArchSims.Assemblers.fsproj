@@ -52,8 +52,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="RamsesAssembler.fs" />
-    <Content Include="app.config" />
     <Compile Include="CesarAssembler.fs" />
+    <Content Include="app.config" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

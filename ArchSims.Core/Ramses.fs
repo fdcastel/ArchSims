@@ -1,5 +1,7 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core
 
+open LanguagePrimitives
+
 open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Ramses =
@@ -103,8 +105,8 @@ module Ramses =
 
         cpu.Registers.InstructionRegister.OpCode <- readByteFromProgramCounterAndAdvance()
 
-        let instruction = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& InstructionMask)
-        let addressMode = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& AddressModeMask)
+        let instruction = cpu.Registers.InstructionRegister.OpCode &&& InstructionMask |> EnumOfValue
+        let addressMode = cpu.Registers.InstructionRegister.OpCode &&& AddressModeMask |> EnumOfValue
         cpu.Registers.InstructionRegister.OperandAddress <- 
             match instruction with
             | Instruction.Str
@@ -127,8 +129,8 @@ module Ramses =
             | _ -> 0uy // Instructions without operand
 
     let Execute cpu =
-        let instruction = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& InstructionMask)
-        let register = LanguagePrimitives.EnumOfValue (cpu.Registers.InstructionRegister.OpCode &&& RegisterMask)
+        let instruction = cpu.Registers.InstructionRegister.OpCode &&& InstructionMask |> EnumOfValue
+        let register = cpu.Registers.InstructionRegister.OpCode &&& RegisterMask |> EnumOfValue
 
         let readOperand() =
             MemoryReadByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress)
@@ -197,10 +199,10 @@ module Ramses =
             cpu.Registers.ProgramCounter <- cpu.Registers.InstructionRegister.OperandAddress + 1uy
                 
         | Instruction.Neg ->   // NEG r 
-            int ((~~~registerValue) + 1uy) |> writeRegisterAndCarry (fun x -> registerValue = 0uy)
+            int ((~~~registerValue) + 1uy) |> writeRegisterAndCarry (fun _ -> registerValue = 0uy)
 
         | Instruction.Shr ->   // SHR r
-            int (registerValue >>> 1) |> writeRegisterAndCarry (fun x -> (registerValue &&& 1uy) <> 0uy)
+            int (registerValue >>> 1) |> writeRegisterAndCarry (fun _ -> (registerValue &&& 1uy) <> 0uy)
 
         | Instruction.Hlt      // HLT, NOP or unknown instruction: nothing to do
         | Instruction.Nop

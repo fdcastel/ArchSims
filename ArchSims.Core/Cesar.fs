@@ -1,5 +1,7 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core
 
+open LanguagePrimitives
+
 open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Cesar =
@@ -163,70 +165,81 @@ module Cesar =
             let result = firstPart ||| (uint16 (byte sourceMode &&& AddressModeMask) <<< 6) ||| (uint16 (byte sourceRegister &&& RegisterMask) <<< 6)
             result
         | _ -> 
-            failwith "This function can encode only instructions with two operands."
+            failwith "This function only encode instructions with two operands."
 
     let Fetch cpu = 
+        let _r = cpu.Registers.R
+        let _ir = cpu.Registers.InstructionRegister
+
         let appendByteToInstructionRegister value =
-            cpu.Registers.InstructionRegister.Data <- Array.append cpu.Registers.InstructionRegister.Data [|value|]
+            _ir.Data <- Array.append _ir.Data [|value|]
             
         let appendWordToInstructionRegister (value:uint16) =
-            cpu.Registers.InstructionRegister.Data <- Array.append cpu.Registers.InstructionRegister.Data [|byte value >>> 8; byte value|]
+            _ir.Data <- Array.append _ir.Data [|byte value >>> 8; byte value|]
+
+        let readRegisterAndInc register = 
+            let result = _r.[int register]
+            _r.[int register] <- result + 2us
+            result
+
+        let decRegisterAndRead register = 
+            let result = _r.[int register] - 2us
+            _r.[int register] <- result
+            result
+
+        let readWordAndInc register = 
+            let result = MemoryReadWordBigEndian cpu.Memory (int _r.[int register])
+            _r.[int register] <- _r.[int register] + 2us
+            result
+
+        let decAndReadWord register = 
+            _r.[int register] <- _r.[int register] - 2us
+            MemoryReadWordBigEndian cpu.Memory (int _r.[int register])
 
         let DecodeOperand mode register =
-            let mutable reg = &cpu.Registers.R.[int register]
-            let mutable pc = &cpu.Registers.R.[7]
             match mode with
             | AddressMode.Register -> 
                 Reg register
 
             | AddressMode.RegPostInc ->
-                let result = reg
-                reg <- result + 2us
-                Addr result
+                Addr (readRegisterAndInc register)
 
             | AddressMode.RegPreDec ->
-                let result = reg - 2us
-                reg <- result
-                Addr result
+                Addr (decRegisterAndRead register)
 
             | AddressMode.Indexed ->
-                let address = MemoryReadWordBigEndian cpu.Memory (int pc)
-                pc <- pc + 2us
+                let address = readWordAndInc Register.R7
                 appendWordToInstructionRegister address
-                Addr (reg + address)
+                Addr (_r.[int register] + address)
 
             | AddressMode.RegisterIndirect ->
-                Addr reg
+                Addr _r.[int register]
 
             | AddressMode.RegPostIncIndirect ->
-                let result = MemoryReadWordBigEndian cpu.Memory (int reg)
-                reg <- reg + 2us
-                Addr result
+                Addr (readWordAndInc register)
 
             | AddressMode.RegPreDecIndirect ->
-                reg <- reg - 2us
-                Addr (MemoryReadWordBigEndian cpu.Memory (int reg))
+                Addr (decAndReadWord register)
 
             | AddressMode.IndexedIndirect ->
-                let addressIndirect = MemoryReadWordBigEndian cpu.Memory (int pc)
-                pc <- pc + 2us
-                let addressIndexed = reg + addressIndirect
+                let addressIndirect = readWordAndInc Register.R7
                 appendWordToInstructionRegister addressIndirect
+                let addressIndexed = _r.[int register] + addressIndirect
                 Addr (MemoryReadWordBigEndian cpu.Memory (int addressIndexed))
 
             | _ -> failwith "Invalid AddressMode"
 
         let readByteFromProgramCounterAndAdvance() =
-            let result = MemoryReadByte cpu.Memory (int cpu.Registers.R.[7])
-            cpu.Registers.R.[7] <- cpu.Registers.R.[7] + 1us
+            let result = MemoryReadByte cpu.Memory (int _r.[7])
+            _r.[7] <- _r.[7] + 1us
             result
 
         let firstOpCode = readByteFromProgramCounterAndAdvance()
-        cpu.Registers.InstructionRegister.Data <- [|firstOpCode|]
-        cpu.Registers.InstructionRegister.SourceOperand <- NoOp
-        cpu.Registers.InstructionRegister.TargetOperand <- NoOp
+        _ir.Data <- [|firstOpCode|]
+        _ir.SourceOperand <- NoOp
+        _ir.TargetOperand <- NoOp
 
-        let instruction = LanguagePrimitives.EnumOfValue (firstOpCode &&& InstructionMask)
+        let instruction = firstOpCode &&& InstructionMask |> EnumOfValue
         match instruction with
         | Instruction.Nop
         | Instruction.Ccc
@@ -248,41 +261,45 @@ module Cesar =
                 | Instruction.Cmp
                 | Instruction.And
                 | Instruction.Or -> // Second operand
-                    let sourceMode = LanguagePrimitives.EnumOfValue ((firstOpCode <<< 2) &&& AddressModeMask)
-                    let sourceRegister = LanguagePrimitives.EnumOfValue (((firstOpCode &&& 0x01uy) <<< 2) ||| (secondOpCode >>> 6) &&& RegisterMask)
-                    cpu.Registers.InstructionRegister.SourceOperand <- DecodeOperand sourceMode sourceRegister
+                    let sourceMode = (firstOpCode <<< 2) &&& AddressModeMask |> EnumOfValue
+                    let sourceRegister = ((firstOpCode &&& 0x01uy) <<< 2) ||| (secondOpCode >>> 6) &&& RegisterMask |> EnumOfValue
+                    _ir.SourceOperand <- DecodeOperand sourceMode sourceRegister
                 | _ -> ()
                 // First operand
-                let targetMode = LanguagePrimitives.EnumOfValue (secondOpCode &&& AddressModeMask)
-                let targetRegister = LanguagePrimitives.EnumOfValue (secondOpCode &&& RegisterMask)
-                cpu.Registers.InstructionRegister.TargetOperand <- DecodeOperand targetMode targetRegister
+                let targetMode = secondOpCode &&& AddressModeMask |> EnumOfValue
+                let targetRegister = secondOpCode &&& RegisterMask |> EnumOfValue
+                _ir.TargetOperand <- DecodeOperand targetMode targetRegister
             
     let Execute cpu =
+        let _r = cpu.Registers.R
+        let _ir = cpu.Registers.InstructionRegister
+        let _flags = cpu.Registers.Flags
+
         let isNegative value = 
             value > 0x7FFFus
 
         let aluAdd (a:uint16) (b:uint16) carryIn =
             let fullResult = int a + int b + if carryIn then 1 else 0
-            cpu.Registers.Flags.Carry <- fullResult > 0xFFFF
+            _flags.Carry <- fullResult > 0xFFFF
 
             let result = uint16 fullResult
-            cpu.Registers.Flags.Overflow <- (isNegative a && isNegative b && not (isNegative result)) ||
-                                            (not (isNegative a) && not (isNegative b) && isNegative result)
+            _flags.Overflow <- (     isNegative a  &&      isNegative b  && not (isNegative result)) ||
+                               (not (isNegative a) && not (isNegative b) &&      isNegative result)
             result                
 
         let readValueFromOperand operand =
             match operand with
-            | Reg register -> cpu.Registers.R.[int register]
+            | Reg register -> _r.[int register]
             | Addr address -> 
                 if address >= DisplayMemoryAddress then     // In display memory area: consider only 8-bits operands 
-                    uint16 (MemoryReadByte cpu.Memory (int address))
+                    MemoryReadByte cpu.Memory (int address) |> uint16
                 else
                     MemoryReadWordBigEndian cpu.Memory (int address)
             | _ -> 0us
 
         let writeValueToOperand operand value =
             match operand with
-            | Reg register -> cpu.Registers.R.[int register] <- value
+            | Reg register -> _r.[int register] <- value
             | Addr address -> 
                 if address >= DisplayMemoryAddress then     // In display memory area: consider only 8-bits operands 
                     byte value |> MemoryWriteByte cpu.Memory (int address)
@@ -290,96 +307,91 @@ module Cesar =
                     value |> MemoryWriteWordBigEndian cpu.Memory (int address)
             | _ -> ()
 
-        let firstOpCode = cpu.Registers.InstructionRegister.Data.[0]
-        let instruction = LanguagePrimitives.EnumOfValue (firstOpCode &&& InstructionMask)
+        let firstOpCode = _ir.Data.[0]
+        let instruction = firstOpCode &&& InstructionMask |> EnumOfValue
         let register = firstOpCode &&& RegisterMask
-            
-        let mutable reg = &cpu.Registers.R.[int register]
-        let mutable sp = &cpu.Registers.R.[6]
-        let mutable pc = &cpu.Registers.R.[7]
-        let mutable n = &cpu.Registers.Flags.Negative
-        let mutable z = &cpu.Registers.Flags.Zero
-        let mutable v = &cpu.Registers.Flags.Overflow
-        let mutable c = &cpu.Registers.Flags.Carry
-
+           
         match instruction with
         | Instruction.Ccc
         | Instruction.Scc ->   // CCC & SCC
             if firstOpCode &&& byte Flag.Negative <> 0uy then
-                n <- instruction = Instruction.Scc
+                _flags.Negative <- instruction = Instruction.Scc
             if firstOpCode &&& byte Flag.Zero <> 0uy then
-                z <- instruction = Instruction.Scc
+                _flags.Zero <- instruction = Instruction.Scc
             if firstOpCode &&& byte Flag.Overflow <> 0uy then
-                v <- instruction = Instruction.Scc
+                _flags.Overflow <- instruction = Instruction.Scc
             if firstOpCode &&& byte Flag.Carry <> 0uy then
-                c <- instruction = Instruction.Scc
+                _flags.Carry <- instruction = Instruction.Scc
 
         | Instruction.Br ->   // Branches group
             let branchIf condition = 
                 if condition then
-                    let branchOperand = int8 cpu.Registers.InstructionRegister.Data.[1]
-                    cpu.Registers.R.[7] <- cpu.Registers.R.[7] + (uint16 branchOperand)
+                    let branchOperand = int8 _ir.Data.[1]
+                    _r.[7] <- _r.[7] + (uint16 branchOperand)
 
-            let subInstruction = Instruction.Br ||| LanguagePrimitives.EnumOfValue (firstOpCode &&& SubInstructionMask)
+            let branchIfNot condition = 
+                branchIf (not condition)
+
+            let subInstruction = Instruction.Br ||| EnumOfValue (firstOpCode &&& SubInstructionMask)
             match subInstruction with
-            | Instruction.Br  -> branchIf true
-            | Instruction.Bne -> branchIf (not z)
-            | Instruction.Beq -> branchIf z
-            | Instruction.Bpl -> branchIf (not n)
-            | Instruction.Bmi -> branchIf n
-            | Instruction.Bvc -> branchIf (not v)
-            | Instruction.Bvs -> branchIf v
-            | Instruction.Bcc -> branchIf (not c)
-            | Instruction.Bcs -> branchIf c
-            | Instruction.Bge -> branchIf (n = v)
-            | Instruction.Blt -> branchIf (n <> v)
-            | Instruction.Bgt -> branchIf ( (n = v) && (not z) )
-            | Instruction.Ble -> branchIf ( (n <> v) || z )
-            | Instruction.Bhi -> branchIf ( (not c) && (not z) )
-            | Instruction.Bls -> branchIf (c || z)
+            | Instruction.Br  -> branchIf       true
+            | Instruction.Bne -> branchIfNot    _flags.Zero
+            | Instruction.Beq -> branchIf       _flags.Zero
+            | Instruction.Bpl -> branchIfNot    _flags.Negative
+            | Instruction.Bmi -> branchIf       _flags.Negative
+            | Instruction.Bvc -> branchIfNot    _flags.Overflow
+            | Instruction.Bvs -> branchIf       _flags.Overflow
+            | Instruction.Bcc -> branchIfNot    _flags.Carry
+            | Instruction.Bcs -> branchIf       _flags.Carry
+            | Instruction.Bge -> branchIf      (_flags.Negative = _flags.Overflow)
+            | Instruction.Blt -> branchIfNot   (_flags.Negative = _flags.Overflow)
+            | Instruction.Bgt -> branchIf    ( (_flags.Negative = _flags.Overflow) && (not _flags.Zero) )
+            | Instruction.Ble -> branchIfNot ( (_flags.Negative = _flags.Overflow) && (not _flags.Zero) )
+            | Instruction.Bhi -> branchIfNot   (_flags.Carry || _flags.Zero)
+            | Instruction.Bls -> branchIf      (_flags.Carry || _flags.Zero)
             | _ -> ()
 
         | Instruction.Jmp ->   // JMP
-            match cpu.Registers.InstructionRegister.TargetOperand with
-            | Addr address -> pc <- address
+            match _ir.TargetOperand with
+            | Addr address -> _r.[7] <- address
             | _ -> () // Mode 0 (register) is not allowed.
             
         | Instruction.Sob ->   // SOB
-            reg <- reg - 1us
-            if reg <> 0us then
-                let branchOperand = uint16 cpu.Registers.InstructionRegister.Data.[1]
-                pc <- pc - branchOperand
+            _r.[int register] <- _r.[int register] - 1us
+            if _r.[int register] <> 0us then
+                let branchOperand = uint16 _ir.Data.[1]
+                _r.[7] <- _r.[7] - branchOperand
             
         | Instruction.Jsr ->   // JSR
-            match cpu.Registers.InstructionRegister.TargetOperand with
+            match _ir.TargetOperand with
             | Addr address -> 
-                sp <- sp - 2us
-                reg |> MemoryWriteWordBigEndian cpu.Memory (int sp)
-                reg <- pc
-                pc <- address
+                _r.[6] <- _r.[6] - 2us
+                _r.[int register] |> MemoryWriteWordBigEndian cpu.Memory (int _r.[6])
+                _r.[int register] <- _r.[7]
+                _r.[7] <- address
             | _ -> () // Mode 0 (register) is not allowed.
             
         | Instruction.Rts ->   // RTS
-            pc <- reg
-            reg <- MemoryReadWordBigEndian cpu.Memory (int sp)
-            sp <- sp + 2us
+            _r.[7] <- _r.[int register]
+            _r.[int register] <- MemoryReadWordBigEndian cpu.Memory (int _r.[6])
+            _r.[6] <- _r.[6] + 2us
 
         | Instruction.Clr ->   // CLR group
-            let subInstruction = Instruction.Clr ||| LanguagePrimitives.EnumOfValue (firstOpCode &&& SubInstructionMask)
+            let subInstruction = Instruction.Clr ||| EnumOfValue (firstOpCode &&& SubInstructionMask)
 
             let mutable targetValue = 0us
             if subInstruction <> Instruction.Clr then  // Do not read operand in CLR
-                targetValue <- readValueFromOperand cpu.Registers.InstructionRegister.TargetOperand
+                targetValue <- readValueFromOperand _ir.TargetOperand
                   
             match subInstruction with
             | Instruction.Clr ->
-                c <- false
-                v <- false
+                _flags.Carry <- false
+                _flags.Overflow <- false
                 targetValue <- 0us
                     
             | Instruction.Not ->
-                c <- true
-                v <- false
+                _flags.Carry <- true
+                _flags.Overflow <- false
                 targetValue <- ~~~targetValue
 
             | Instruction.Inc ->
@@ -387,58 +399,58 @@ module Cesar =
 
             | Instruction.Dec ->
                 targetValue <- aluAdd targetValue 0xFFFFus false
-                c <- not c
+                _flags.Carry <- not _flags.Carry
 
             | Instruction.Neg ->
                 targetValue <- aluAdd ~~~targetValue 1us false
-                c <- not c
+                _flags.Carry <- not _flags.Carry
 
             | Instruction.Tst ->
-                c <- false
-                v <- false
+                _flags.Carry <- false
+                _flags.Overflow <- false
 
             | Instruction.Ror ->
-                let higherBit = if c then 0x8000us else 0us
-                c <- (targetValue &&& 1us) <> 0us
+                let higherBit = if _flags.Carry then 0x8000us else 0us
+                _flags.Carry <- (targetValue &&& 1us) <> 0us
                 targetValue <- targetValue >>> 1 ||| higherBit
-                n <- isNegative targetValue
-                v <- c <> n
+                _flags.Negative <- isNegative targetValue
+                _flags.Overflow <- _flags.Carry <> _flags.Negative
 
             | Instruction.Rol ->
-                let lowerBit = if c then 1us else 0us
-                c <- (targetValue &&& 0x8000us) <> 0us
+                let lowerBit = if _flags.Carry then 1us else 0us
+                _flags.Carry <- (targetValue &&& 0x8000us) <> 0us
                 targetValue <- targetValue <<< 1 ||| lowerBit
-                n <- isNegative targetValue
-                v <- c <> n
+                _flags.Negative <- isNegative targetValue
+                _flags.Overflow <- _flags.Carry <> _flags.Negative
 
             | Instruction.Asr ->
                 let higherBit = targetValue &&& 0x8000us
-                c <- (targetValue &&& 1us) <> 0us
+                _flags.Carry <- (targetValue &&& 1us) <> 0us
                 targetValue <- targetValue >>> 1 ||| higherBit
-                n <- not (isNegative targetValue)
-                v <- c <> n
+                _flags.Negative <- not (isNegative targetValue)
+                _flags.Overflow <- _flags.Carry <> _flags.Negative
 
             | Instruction.Asl ->
-                c <- (targetValue &&& 0x8000us) <> 0us
+                _flags.Carry <- (targetValue &&& 0x8000us) <> 0us
                 targetValue <- targetValue <<< 1
-                n <- not (isNegative targetValue)
-                v <- c <> n
+                _flags.Negative <- not (isNegative targetValue)
+                _flags.Overflow <- _flags.Carry <> _flags.Negative
 
             | Instruction.Adc ->
-                let addCar = if c then 1us else 0us
+                let addCar = if _flags.Carry then 1us else 0us
                 targetValue <- aluAdd targetValue addCar false
 
             | Instruction.Sbc ->
-                let negCar = if c then 0xFFFEus else 0xFFFFus
+                let negCar = if _flags.Carry then 0xFFFEus else 0xFFFFus
                 targetValue <- aluAdd targetValue negCar true
 
             | _ -> ()
                 
-            n <- isNegative targetValue
-            z <- targetValue = 0us
+            _flags.Negative <- isNegative targetValue
+            _flags.Zero <- targetValue = 0us
 
             if subInstruction <> Instruction.Tst then  // Do not write result in TST
-                writeValueToOperand cpu.Registers.InstructionRegister.TargetOperand targetValue
+                writeValueToOperand _ir.TargetOperand targetValue
 
         | Instruction.Mov 
         | Instruction.Add 
@@ -446,49 +458,49 @@ module Cesar =
         | Instruction.Cmp 
         | Instruction.And 
         | Instruction.Or ->    // MOV group
-            let sourceValue = readValueFromOperand cpu.Registers.InstructionRegister.SourceOperand
+            let sourceValue = readValueFromOperand _ir.SourceOperand
 
             let mutable targetValue = 0us
             if instruction <> Instruction.Mov then  // Do not read target operand in MOV
-                targetValue <- readValueFromOperand cpu.Registers.InstructionRegister.TargetOperand
+                targetValue <- readValueFromOperand _ir.TargetOperand
                   
             match instruction with
             | Instruction.Mov ->
                 targetValue <- sourceValue
-                cpu.Registers.Flags.Overflow <- false
+                _flags.Overflow <- false
 
             | Instruction.Add ->
                 targetValue <- aluAdd sourceValue targetValue false
 
             | Instruction.Sub ->
                 targetValue <- aluAdd ~~~sourceValue targetValue true
-                c <- not c
+                _flags.Carry <- not _flags.Carry
 
             | Instruction.Cmp ->
                 targetValue <- aluAdd sourceValue ~~~targetValue true
-                c <- not c
+                _flags.Carry <- not _flags.Carry
 
             | Instruction.And ->
                 targetValue <- targetValue &&& sourceValue
-                v <- false
+                _flags.Overflow <- false
 
             | Instruction.Or ->
                 targetValue <- targetValue ||| sourceValue
-                v <- false
+                _flags.Overflow <- false
 
             | _ -> ()
 
-            cpu.Registers.Flags.Negative <- isNegative targetValue
-            cpu.Registers.Flags.Zero <- targetValue = 0us
+            _flags.Negative <- isNegative targetValue
+            _flags.Zero <- targetValue = 0us
 
             if instruction <> Instruction.Cmp then  // Do not write result in CMP
-                writeValueToOperand cpu.Registers.InstructionRegister.TargetOperand targetValue
+                writeValueToOperand _ir.TargetOperand targetValue
 
         | Instruction.Hlt      // HLT, NOP or unknown instruction: nothing to do
         | Instruction.Nop
         | _ -> ()
 
-        cpu.Registers.Flags.Halted <- instruction = Instruction.Hlt
+        _flags.Halted <- instruction = Instruction.Hlt
 
     let Step cpu =
         Fetch cpu

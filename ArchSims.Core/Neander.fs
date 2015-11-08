@@ -1,5 +1,7 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core
 
+open LanguagePrimitives
+
 open Ufrgs.Inf.ArchSims.Core.Memory
 
 module Neander =
@@ -70,7 +72,7 @@ module Neander =
 
         cpu.Registers.InstructionRegister.OpCode <- readByteFromProgramCounterAndAdvance()
         cpu.Registers.InstructionRegister.OperandAddress <- 
-            match LanguagePrimitives.EnumOfValue cpu.Registers.InstructionRegister.OpCode with
+            match EnumOfValue cpu.Registers.InstructionRegister.OpCode with
             | Instruction.Sta
             | Instruction.Lda
             | Instruction.Add
@@ -94,7 +96,7 @@ module Neander =
             if condition then
                 cpu.Registers.ProgramCounter <- cpu.Registers.InstructionRegister.OperandAddress                
 
-        let instruction = LanguagePrimitives.EnumOfValue cpu.Registers.InstructionRegister.OpCode
+        let instruction = EnumOfValue cpu.Registers.InstructionRegister.OpCode
         match instruction with
         | Instruction.Sta ->   // STA addr: MEM(addr) <- AC
             cpu.Registers.Accumulator |> MemoryWriteByte cpu.Memory (int cpu.Registers.InstructionRegister.OperandAddress) 
