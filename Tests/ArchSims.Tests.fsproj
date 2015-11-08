@@ -61,11 +61,6 @@
     <Content Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ArchSims.Core\ArchSims.Core.fsproj">
-      <Name>ArchSims.Core</Name>
-      <Project>{02d81604-f01f-493e-a370-eae4ec7f6704}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -74,9 +69,16 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\ArchSims.Assemblers\ArchSims.Assemblers.fsproj">
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Assemblers\ArchSims.Assemblers.fsproj">
       <Name>ArchSims.Assemblers</Name>
       <Project>{211700f3-1add-4a30-bb32-585c347a1ee2}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\ArchSims.Core.fsproj">
+      <Name>ArchSims.Core</Name>
+      <Project>{02d81604-f01f-493e-a370-eae4ec7f6704}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
