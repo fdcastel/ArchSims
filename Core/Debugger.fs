@@ -43,7 +43,8 @@ module Debugger =
 
     let DebuggerRun debugger maximumInstructions =
         debugger.LastStop <- None
+        let limitInstructions = debugger.InstructionCount + maximumInstructions
         while debugger.LastStop = None do
             DebuggerStep debugger
-            if debugger.InstructionCount >= maximumInstructions then
+            if debugger.InstructionCount >= limitInstructions then
                 debugger.LastStop <- RunningForever

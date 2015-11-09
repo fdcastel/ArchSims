@@ -32,7 +32,9 @@ type DebuggerTests() =
     [<TestMethod>]
     member this.``Debugger: DebuggerRun detects when running forever``() =
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop RunningForever]
+        this.AssertDebuggerState [DebuggerLastStop RunningForever; Instructions 1000]
+        DebuggerRun debugger 500
+        this.AssertDebuggerState [DebuggerLastStop RunningForever; Instructions 1500]
 
     [<TestMethod>]
     member this.``Debugger: DebuggerReset reverts to clean state``() =
