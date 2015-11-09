@@ -217,3 +217,48 @@ module Ramses =
     let Reset cpu =
         cpu.Registers |> RegistersReset
         cpu.Memory |> MemoryReset 
+
+    let DisassembleInstruction content =
+        match content with
+        | [] -> ""
+        | firstOpCode::tail -> 
+            let register() =
+                let register = firstOpCode &&& RegisterMask |> EnumOfValue
+                match register with
+                | Register.Ra -> " A"
+                | Register.Rb -> " B"
+                | Register.Rx -> " X"
+                | Register.Pc -> " PC"
+                | _ -> failwith "Invalid Register"
+
+            let operand() =
+                let value = match tail with
+                            | [] -> 0uy
+                            | h::t -> h
+                let addressMode = firstOpCode &&& AddressModeMask |> EnumOfValue
+                match addressMode with
+                | AddressMode.Direct    -> sprintf " %i" value
+                | AddressMode.Indirect  -> sprintf " %i,I" value
+                | AddressMode.Immediate -> sprintf " #%i" value
+                | AddressMode.Indexed   -> sprintf " %i,X" value
+                | _ -> failwith "Invalid AddressMode"
+
+            let instruction = firstOpCode &&& InstructionMask |> EnumOfValue
+            match instruction with
+            | Instruction.Str -> "STR" + register() + operand()
+            | Instruction.Ldr -> "LDR" + register() + operand()
+            | Instruction.Add -> "ADD" + register() + operand()
+            | Instruction.Or  -> "OR " + register() + operand()
+            | Instruction.And -> "AND" + register() + operand()
+            | Instruction.Not -> "NOT" + register()
+            | Instruction.Sub -> "SUB" + register() + operand()
+            | Instruction.Jmp -> "JMP" + operand()
+            | Instruction.Jn  -> "JN " + operand()
+            | Instruction.Jz  -> "JZ " + operand()
+            | Instruction.Jc  -> "JC " + operand()
+            | Instruction.Jsr -> "JSR" + operand()
+            | Instruction.Neg -> "NEG" + register() 
+            | Instruction.Shr -> "SHR" + register()
+            | Instruction.Hlt -> "HLT"
+            | Instruction.Nop
+            | _ -> "NOP"

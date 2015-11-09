@@ -1,7 +1,9 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Assemblers
 
 open System.Collections.Generic
+
 open FParsec
+
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Ramses
 
@@ -161,48 +163,3 @@ module RamsesAssembler =
         | 0 -> ()
         | 1 -> failwith (sprintf "Label indefinido: %s" (Seq.head deferredLabels.Keys))
         | _ -> failwith (sprintf "Labels indefinidos: %A" (Seq.toList deferredLabels.Keys))
-
-    let DisassembleInstruction content =
-        match content with
-        | [] -> ""
-        | firstOpCode::tail -> 
-            let register() =
-                let register = LanguagePrimitives.EnumOfValue (firstOpCode &&& RegisterMask)
-                match register with
-                | Register.Ra -> " A"
-                | Register.Rb -> " B"
-                | Register.Rx -> " X"
-                | Register.Pc -> " PC"
-                | _ -> failwith "Invalid Register"
-
-            let operand() =
-                let value = match tail with
-                            | [] -> 0uy
-                            | h::t -> h
-                let addressMode = LanguagePrimitives.EnumOfValue (firstOpCode &&& AddressModeMask)
-                match addressMode with
-                | AddressMode.Direct    -> sprintf " %i" value
-                | AddressMode.Indirect  -> sprintf " %i,I" value
-                | AddressMode.Immediate -> sprintf " #%i" value
-                | AddressMode.Indexed   -> sprintf " %i,X" value
-                | _ -> failwith "Invalid AddressMode"
-
-            let instruction = LanguagePrimitives.EnumOfValue (firstOpCode &&& InstructionMask)
-            match instruction with
-            | Instruction.Str -> "STR" + register() + operand()
-            | Instruction.Ldr -> "LDR" + register() + operand()
-            | Instruction.Add -> "ADD" + register() + operand()
-            | Instruction.Or  -> "OR " + register() + operand()
-            | Instruction.And -> "AND" + register() + operand()
-            | Instruction.Not -> "NOT" + register()
-            | Instruction.Sub -> "SUB" + register() + operand()
-            | Instruction.Jmp -> "JMP" + operand()
-            | Instruction.Jn  -> "JN " + operand()
-            | Instruction.Jz  -> "JZ " + operand()
-            | Instruction.Jc  -> "JC " + operand()
-            | Instruction.Jsr -> "JSR" + operand()
-            | Instruction.Neg -> "NEG" + register() 
-            | Instruction.Shr -> "SHR" + register()
-            | Instruction.Hlt -> "HLT"
-            | Instruction.Nop
-            | _ -> "NOP"
