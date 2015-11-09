@@ -119,13 +119,13 @@ module Cesar =
 
     let CreateRegisters() = {
         R = [| 0us; 0us; 0us; 0us; 0us; 0us; 0us; 0us |]
-        InstructionRegister = { Data = [||]; SourceOperand = NoOp; TargetOperand = NoOp }
+        InstructionRegister = { Data = [|0uy|]; SourceOperand = NoOp; TargetOperand = NoOp }
         Flags = { Halted = false; Negative = false; Zero = true; Overflow = false; Carry = false }
     }
 
     let RegistersReset registers = 
         Array.fill registers.R 0 registers.R.Length 0us
-        registers.InstructionRegister.Data <- [||]
+        registers.InstructionRegister.Data <- [|0uy|]
         registers.InstructionRegister.SourceOperand <- NoOp
         registers.InstructionRegister.TargetOperand <- NoOp
         registers.Flags.Halted <- false

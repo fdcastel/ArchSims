@@ -26,7 +26,7 @@ type CesarState =
 
 [<TestClass>]
 type CesarTests() = 
-    let cpu = CreateCpu()
+    let mutable cpu = CreateCpu()
 
     member this.AssertCesarState states =
         for state in states do
@@ -52,7 +52,8 @@ type CesarTests() =
         this.AssertCesarState [R0 0us; R1 0us; R2 0us; R3 0us; R4 0us; R5 0us; R6 0us; ProgramCounter 0us; 
             FlagsHalted false; FlagsNegative false; FlagsZero true; FlagsOverflow false; FlagsCarry false; 
             MemoryReads 0; MemoryWrites 0]
-        Assert.AreEqual(0, cpu.Registers.InstructionRegister.Data.Length)
+        Assert.AreEqual(1, cpu.Registers.InstructionRegister.Data.Length)
+        Assert.AreEqual(0uy, cpu.Registers.InstructionRegister.Data.[0])
         for i = 0 to cpu.Memory.Data.Length - 1 do
             Assert.AreEqual(0uy, cpu.Memory.Data.[i])
 
@@ -189,7 +190,7 @@ type CesarTests() =
 
     [<TestInitialize>]
     member this.Setup() =
-        Reset cpu
+        cpu <- CreateCpu()
         
     [<TestMethod>]
     member this.``Cesar: New Cpu starts in clean state``() =

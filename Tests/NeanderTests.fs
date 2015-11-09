@@ -17,7 +17,7 @@ type NeanderState =
 
 [<TestClass>]
 type NeanderTests() = 
-    let cpu = CreateCpu()
+    let mutable cpu = CreateCpu()
 
     member this.AssertNeanderState states =
         for state in states do
@@ -49,7 +49,7 @@ type NeanderTests() =
 
     [<TestInitialize>]
     member this.Setup() =
-        Reset cpu
+        cpu <- CreateCpu()
         
     [<TestMethod>]
     member this.``Neander: New Cpu starts in clean state``() =

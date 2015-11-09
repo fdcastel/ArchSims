@@ -21,7 +21,7 @@ type RamsesState =
 
 [<TestClass>]
 type RamsesTests() = 
-    let cpu = CreateCpu()
+    let mutable cpu = CreateCpu()
 
     member this.AssertRamsesState states =
         for state in states do
@@ -63,7 +63,7 @@ type RamsesTests() =
 
     [<TestInitialize>]
     member this.Setup() =
-        Reset cpu
+        cpu <- CreateCpu()
         
     [<TestMethod>]
     member this.``Ramses: New Cpu starts in clean state``() =
