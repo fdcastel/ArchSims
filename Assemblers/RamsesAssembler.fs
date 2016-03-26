@@ -127,7 +127,7 @@ module RamsesAssembler =
 
         let setLabelAddress label value =
             match labels.TryGetValue(label) with
-            | true, _ -> failwith "Label duplicado: %s" label
+            | true, _ -> failwithf "Label duplicado: %s" label
             | _ ->
                 labels.Add(label, value)
                 match deferredLabels.TryGetValue(label) with
@@ -161,5 +161,5 @@ module RamsesAssembler =
 
         match deferredLabels.Count with
         | 0 -> ()
-        | 1 -> failwith (sprintf "Label indefinido: %s" (Seq.head deferredLabels.Keys))
-        | _ -> failwith (sprintf "Labels indefinidos: %A" (Seq.toList deferredLabels.Keys))
+        | 1 -> failwithf "Label indefinido: %s" (Seq.head deferredLabels.Keys)
+        | _ -> failwithf "Labels indefinidos: %A" (Seq.toList deferredLabels.Keys)
