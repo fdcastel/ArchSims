@@ -15,7 +15,7 @@ module Debugger =
         CpuStep: (unit -> bool)                  // Must return 'true' when halted
         mutable InstructionCount: int
         mutable LastStop: DebuggerStopReason
-        Breakpoints: HashSet<int>
+        mutable Breakpoints: Set<int>
     }
 
     let CreateDebugger cpuGetProgramCounter cpuStep = {
@@ -23,13 +23,13 @@ module Debugger =
         CpuStep = cpuStep
         InstructionCount = 0
         LastStop = None
-        Breakpoints = new HashSet<int>()
+        Breakpoints = Set.empty
     }
 
     let DebuggerReset debugger =
         debugger.InstructionCount <- 0
         debugger.LastStop <- None
-        debugger.Breakpoints.Clear()
+        debugger.Breakpoints <- Set.empty
 
     let DebuggerStep debugger =
         debugger.LastStop <- None
@@ -48,3 +48,9 @@ module Debugger =
             DebuggerStep debugger
             if debugger.InstructionCount >= limitInstructions then
                 debugger.LastStop <- RunningForever
+
+    let DebuggerSetBreakpoint debugger address =
+        debugger.Breakpoints <- debugger.Breakpoints.Add(address)
+
+    let DebuggerClearBreakpoint debugger address =
+        debugger.Breakpoints <- debugger.Breakpoints.Remove(address)

@@ -39,7 +39,7 @@ type DebuggerTests() =
     [<TestMethod>]
     member this.``Debugger: DebuggerReset reverts to clean state``() =
         cpu.Memory.Data.[0] <- byte Instruction.Hlt
-        debugger.Breakpoints.Add(10) |> ignore
+        DebuggerSetBreakpoint debugger 10
         DebuggerStep debugger
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted; Instructions 1]
         DebuggerReset debugger
@@ -59,7 +59,7 @@ type DebuggerTests() =
         DebuggerStep debugger
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
-        debugger.Breakpoints.Add(3) |> ignore
+        DebuggerSetBreakpoint debugger 3
         DebuggerStep debugger
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint]
 
@@ -67,7 +67,7 @@ type DebuggerTests() =
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
         cpu.Memory.Data.[5] <- byte Instruction.Hlt
-        debugger.Breakpoints.Add(5) |> ignore
+        DebuggerSetBreakpoint debugger 5
         DebuggerStep debugger
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted]
 
@@ -80,8 +80,8 @@ type DebuggerTests() =
         
     [<TestMethod>]
     member this.``Debugger: Breakpoints halts execution``() =
-        debugger.Breakpoints.Add(12) |> ignore
-        debugger.Breakpoints.Add(50) |> ignore
+        DebuggerSetBreakpoint debugger 12
+        DebuggerSetBreakpoint debugger 50
         
         DebuggerRun debugger 1000
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 13]
