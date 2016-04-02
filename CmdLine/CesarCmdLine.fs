@@ -5,7 +5,7 @@ open System.IO
 
 open Ufrgs.Inf.ArchSims.Core.Debugger
 open Ufrgs.Inf.ArchSims.Core.Cesar
-open Ufrgs.Inf.ArchSims.Assemblers.CesarAssembler
+open Ufrgs.Inf.ArchSims.Assemblers.Cesar.CesarAssembler
 open Ufrgs.Inf.ArchSims.CmdLine.Common
 
 module CesarCmdLine =

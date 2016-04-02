@@ -1,11 +1,11 @@
-﻿namespace Ufrgs.Inf.ArchSims.Core
+﻿namespace Ufrgs.Inf.ArchSims.Emulators
 
 open System.IO
 open System.Reflection
 
-open Ufrgs.Inf.ArchSims.Assemblers
 open Ufrgs.Inf.ArchSims.Core
 open Ufrgs.Inf.ArchSims.Core.Memory
+open Ufrgs.Inf.ArchSims.Assemblers.Cesar
 
 module RamsesEmulator =
 

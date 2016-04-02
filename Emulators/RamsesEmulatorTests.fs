@@ -1,4 +1,4 @@
-﻿namespace Ufrgs.Inf.ArchSims.Tests
+﻿namespace Ufrgs.Inf.ArchSims.Emulators.Tests.RamsesEmulator
 
 open System
 
@@ -6,7 +6,7 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Ramses
-open Ufrgs.Inf.ArchSims.Core.RamsesEmulator
+open Ufrgs.Inf.ArchSims.Emulators.RamsesEmulator
 
 type RamsesEmulatorState =
     | Ra of byte

@@ -1,4 +1,4 @@
-﻿namespace Ufrgs.Inf.ArchSims.Tests
+﻿namespace Ufrgs.Inf.ArchSims.Core.Tests.Neander
 
 open Microsoft.VisualStudio.TestTools.UnitTesting
 

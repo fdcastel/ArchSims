@@ -5,14 +5,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>4a14125e-057e-424d-8859-e1212c58ce08</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>ArchSims.Runner</RootNamespace>
-    <AssemblyName>ArchSims.CmdLine</AssemblyName>
+    <ProjectGuid>{c9f576be-98e0-4d8c-bc6f-2d1518a7926a}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Neander.Tests</RootNamespace>
+    <AssemblyName>ArchSims.Core.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
-    <Name>ArchSims.CmdLine</Name>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Name>ArchSims.Core.Tests</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,11 +22,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Debug\ArchSims.Runners.XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
-    <StartArguments>
-    </StartArguments>
+    <DocumentationFile>bin\Debug\ArchSims.Tests.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,9 +31,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Release\ArchSims.Runners.XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
+    <DocumentationFile>bin\Release\ArchSims.Tests.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -57,13 +51,14 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Common.fs" />
-    <Compile Include="RamsesCmdLine.fs" />
-    <Compile Include="CesarCmdLine.fs" />
-    <Compile Include="Main.fs" />
+    <Compile Include="DebuggerTests.fs" />
+    <Compile Include="NeanderTests.fs" />
+    <Compile Include="RamsesTests.fs" />
+    <Compile Include="CesarTests.fs" />
     <Content Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
@@ -73,12 +68,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Assemblers\ArchSims.Assemblers.fsproj">
-      <Name>ArchSims.Assemblers</Name>
-      <Project>{211700f3-1add-4a30-bb32-585c347a1ee2}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\ArchSims.Core.fsproj">
+    <ProjectReference Include="..\ArchSims.Core.fsproj">
       <Name>ArchSims.Core</Name>
       <Project>{02d81604-f01f-493e-a370-eae4ec7f6704}</Project>
       <Private>True</Private>

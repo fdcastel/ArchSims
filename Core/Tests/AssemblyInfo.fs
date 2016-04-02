@@ -1,4 +1,4 @@
-﻿namespace Ufrgs.Inf.ArchSims.Core
+﻿namespace Ufrgs.Inf.ArchSims.Core.Tests
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,11 +7,11 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("ArchSims.Core")>]
+[<assembly: AssemblyTitle("ArchSims.Core.Tests")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("ArchSims.Core")>]
+[<assembly: AssemblyProduct("ArchSims.Core.Tests")>]
 [<assembly: AssemblyCopyright("Copyright © R.F.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -22,7 +22,7 @@ open System.Runtime.InteropServices
 [<assembly: ComVisible(false)>]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[<assembly: Guid("02d81604-f01f-493e-a370-eae4ec7f6704")>]
+[<assembly: Guid("a825222e-01ef-4d63-80b9-c32ce4da3c65")>]
 
 // Version information for an assembly consists of the following four values:
 // 

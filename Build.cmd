@@ -25,10 +25,14 @@ CALL "%VS140COMNTOOLS%"\VsDevCmd.bat
 msbuild.exe .\ArchSims.sln /t:Build /p:Configuration=Release
 IF ERRORLEVEL 1 PAUSE && EXIT /B 1
 
-mstest.exe /testcontainer:.\Tests\bin\Release\ArchSims.Tests.dll
+mstest.exe /testcontainer:.\Core\Tests\bin\Release\ArchSims.Core.Tests.dll
 IF ERRORLEVEL 1 PAUSE && EXIT /B 1
 
+mstest.exe /testcontainer:.\Assemblers\Tests\bin\Release\ArchSims.Assemblers.Tests.dll
+IF ERRORLEVEL 1 PAUSE && EXIT /B 1
 
+mstest.exe /testcontainer:.\Emulators\Tests\bin\Release\ArchSims.Emulators.Tests.dll
+IF ERRORLEVEL 1 PAUSE && EXIT /B 1
 
 ::
 :: Creates output folder

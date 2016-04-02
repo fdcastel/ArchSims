@@ -1,4 +1,4 @@
-﻿namespace ArchSims.Assemblers.AssemblyInfo
+﻿namespace Ufrgs.Inf.ArchSims.Assemblers
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -12,7 +12,7 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
 [<assembly: AssemblyProduct("ArchSims.Assemblers")>]
-[<assembly: AssemblyCopyright("Copyright © R.Weber / F.D.Castel 2015")>]
+[<assembly: AssemblyCopyright("Copyright © R.F.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
 

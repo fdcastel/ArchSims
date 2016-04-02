@@ -1,4 +1,4 @@
-﻿namespace ArchSims.Tests.AssemblyInfo
+﻿namespace Ufrgs.Inf.ArchSims.Core.Tests
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,12 +7,12 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("ArchSims.Tests")>]
+[<assembly: AssemblyTitle("ArchSims.Emulators.Tests")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("ArchSims.Tests")>]
-[<assembly: AssemblyCopyright("Copyright © R.Weber / F.D.Castel 2015")>]
+[<assembly: AssemblyProduct("ArchSims.Emulators.Tests")>]
+[<assembly: AssemblyCopyright("Copyright © R.F.Weber / F.D.Castel 2015")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
 

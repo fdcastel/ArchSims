@@ -5,7 +5,7 @@ open System.IO
 
 open Ufrgs.Inf.ArchSims.Core.Debugger
 open Ufrgs.Inf.ArchSims.Core.Ramses
-open Ufrgs.Inf.ArchSims.Assemblers.RamsesAssembler
+open Ufrgs.Inf.ArchSims.Assemblers.Ramses.RamsesAssembler
 open Ufrgs.Inf.ArchSims.CmdLine.Common
 
 module RamsesCmdLine =
