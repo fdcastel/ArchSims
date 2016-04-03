@@ -32,13 +32,11 @@ module Debugger =
         debugger.Breakpoints <- Set.empty
 
     let DebuggerStep debugger =
-        debugger.LastStop <- None
-        if debugger.Breakpoints.Contains (debugger.CpuGetProgramCounter()) then
-            debugger.LastStop <- Breakpoint
-
-        if debugger.CpuStep() then
-            debugger.LastStop <- Halted
-
+        debugger.LastStop <- if debugger.CpuStep() 
+                             then Halted
+                             else if debugger.Breakpoints.Contains (debugger.CpuGetProgramCounter()) 
+                                  then Breakpoint
+                                  else None
         debugger.InstructionCount <- debugger.InstructionCount + 1
 
     let DebuggerRun debugger maximumInstructions =

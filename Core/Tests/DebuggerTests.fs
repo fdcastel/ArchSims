@@ -59,7 +59,7 @@ type DebuggerTests() =
         DebuggerStep debugger
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
-        DebuggerSetBreakpoint debugger 3
+        DebuggerSetBreakpoint debugger 4
         DebuggerStep debugger
         this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint]
 
@@ -84,14 +84,14 @@ type DebuggerTests() =
         DebuggerSetBreakpoint debugger 50
         
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 13]
+        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 12]
         
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 51]
+        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 50]
 
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 13)]
+        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 12)]
 
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 51)]
+        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 50)]
 
