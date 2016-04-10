@@ -316,3 +316,29 @@ type RamsesTests() =
         this.AssertRamsesState [FlagsHalted true]
         Step cpu
         this.AssertRamsesState [FlagsHalted false]
+
+    [<TestMethod>]
+    member this.``Ramses: DisassembleInstruction works as expected``() =
+        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop])
+        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop + 5uy])
+        Assert.AreEqual("HLT", DisassembleInstruction [byte Instruction.Hlt])
+
+        Assert.AreEqual("STR A 12", DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy])
+        Assert.AreEqual("STR B 23,I", DisassembleInstruction [byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy])
+        Assert.AreEqual("STR X #34", DisassembleInstruction [byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy])
+        Assert.AreEqual("STR A 45,X", DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy])
+
+        Assert.AreEqual("NOT A", DisassembleInstruction [byte Instruction.Not ||| byte Register.Ra])
+        Assert.AreEqual("NOT B", DisassembleInstruction [byte Instruction.Not ||| byte Register.Rb])
+        Assert.AreEqual("NOT X", DisassembleInstruction [byte Instruction.Not ||| byte Register.Rx])
+
+        Assert.AreEqual("JMP 12", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy])
+        Assert.AreEqual("JMP 23,I", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy])
+        Assert.AreEqual("JMP #34", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy])
+        Assert.AreEqual("JMP 45,X", DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy])
+
+        Assert.AreEqual("LDR X #0", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 0uy])
+        Assert.AreEqual("LDR X #127", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 127uy])
+        Assert.AreEqual("LDR X #128", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy])
+        Assert.AreEqual("LDR X #255", DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy])
+

@@ -75,58 +75,6 @@ type CesarAssemblerTests() =
         Assert.AreEqual([147uy; 193uy; 255uy; 255uy], AssembleInstruction "MOV #-1, R1")
 
     [<TestMethod>]
-    member this.``CesarAssembler: DisassembleInstruction works as expected``() =
-        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop])
-        Assert.AreEqual("NOP", DisassembleInstruction [byte Instruction.Nop + 5uy])
-        Assert.AreEqual("HLT", DisassembleInstruction [byte Instruction.Hlt])
-
-        Assert.AreEqual("CCC", DisassembleInstruction [byte Instruction.Ccc])
-        Assert.AreEqual("CCC NZVC", DisassembleInstruction [byte Instruction.Ccc ||| byte Flag.Negative ||| byte Flag.Zero ||| byte Flag.Overflow ||| byte Flag.Carry])
-        Assert.AreEqual("SCC", DisassembleInstruction [byte Instruction.Scc])
-        Assert.AreEqual("SCC ZC", DisassembleInstruction [byte Instruction.Scc ||| byte Flag.Zero ||| byte Flag.Carry])
-
-        Assert.AreEqual("BR  0", DisassembleInstruction [byte Instruction.Br; 0uy])
-        Assert.AreEqual("BNE 10", DisassembleInstruction [byte Instruction.Bne; 10uy])
-        Assert.AreEqual("BNE 246", DisassembleInstruction [byte Instruction.Bne; 246uy])
-
-        Assert.AreEqual("JMP ?", DisassembleInstruction [byte Instruction.Jmp; byte Register.R7]) // Invalid!
-        Assert.AreEqual("JMP (R7)+", DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc])
-        Assert.AreEqual("JMP ((R7)+)", DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect])
-
-        Assert.AreEqual("SOB R1, 123", DisassembleInstruction [byte Instruction.Sob ||| byte Register.R1; 123uy])
-        Assert.AreEqual("SOB R2, 234", DisassembleInstruction [byte Instruction.Sob ||| byte Register.R2; 234uy])
-
-        Assert.AreEqual("JSR R1, ?", DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R1; byte Register.R7]) // Invalid!
-        Assert.AreEqual("JSR R2, (R7)+", DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R2; byte Register.R7 ||| byte AddressMode.RegPostInc])
-        Assert.AreEqual("JSR R3, ((R7)+)", DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R3; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect])
-
-        Assert.AreEqual("RTS R4", DisassembleInstruction [byte Instruction.Rts ||| byte Register.R4])
-
-        Assert.AreEqual("NOT R7", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Register])
-        Assert.AreEqual("NOT (R7)+", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc])
-        Assert.AreEqual("NOT -(R7)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDec])
-        Assert.AreEqual("NOT 2(R7)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Indexed; 0uy; 2uy])
-        Assert.AreEqual("NOT (R7)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegisterIndirect])
-        Assert.AreEqual("NOT ((R7)+)", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect])
-        Assert.AreEqual("NOT (-(R7))", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDecIndirect])
-        Assert.AreEqual("NOT (2(R7))", DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.IndexedIndirect; 0uy; 2uy])
-
-        let g = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Register Register.R1 AddressMode.RegPostInc Register.R2
-        Assert.AreEqual("MOV R1, (R2)+", DisassembleInstruction [byte (g >>> 8); byte g])
-
-        let h = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegisterIndirect Register.R1 AddressMode.RegPreDec Register.R2
-        Assert.AreEqual("MOV (R1), -(R2)", DisassembleInstruction [byte (h >>> 8); byte h])
-
-        let i = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Indexed Register.R1 AddressMode.RegPostIncIndirect Register.R2
-        Assert.AreEqual("MOV 10(R1), ((R2)+)", DisassembleInstruction [byte (i >>> 8); byte i; 0uy; 10uy])
-
-        let j = EncodeInstructionTwoOperand Instruction.Mov AddressMode.IndexedIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
-        Assert.AreEqual("MOV (10(R1)), (20(R2))", DisassembleInstruction [byte (j >>> 8); byte j; 0uy; 10uy; 0uy; 20uy])
-
-        let k = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPreDecIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
-        Assert.AreEqual("MOV (-(R1)), (20(R2))", DisassembleInstruction [byte (k >>> 8); byte k; 0uy; 20uy])
-
-    [<TestMethod>]
     member this.``CesarAssembler: AssembleProgram works as expected``() =
         let program = """
             MOV #10, R1
