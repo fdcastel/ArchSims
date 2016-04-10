@@ -6,6 +6,8 @@ open Ufrgs.Inf.ArchSims.Core.Debugger
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Neander
 
+open Ufrgs.Inf.ArchSims.Core.Tests.Utils
+
 type DebuggerState =
     | Instructions of int
     | DebuggerLastStop of DebuggerStopReason
@@ -18,11 +20,11 @@ type DebuggerTests() =
                                   (fun () -> Step cpu;
                                              cpu.Registers.Flags.Halted)
 
-    member this.AssertDebuggerState states =
+    let assertDebuggerState states =
         for state in states do
             match state with
-            | Instructions i -> Assert.AreEqual(i, debugger.InstructionCount)
-            | DebuggerLastStop reason -> Assert.AreEqual(reason, debugger.LastStop)
+            | Instructions i -> debugger.InstructionCount |>== i
+            | DebuggerLastStop reason -> debugger.LastStop |>== reason
             | None -> ()
 
     [<TestInitialize>]
@@ -32,51 +34,51 @@ type DebuggerTests() =
     [<TestMethod>]
     member this.``Debugger: DebuggerRun detects when running forever``() =
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop RunningForever; Instructions 1000]
+        assertDebuggerState [DebuggerLastStop RunningForever; Instructions 1000]
         DebuggerRun debugger 500
-        this.AssertDebuggerState [DebuggerLastStop RunningForever; Instructions 1500]
+        assertDebuggerState [DebuggerLastStop RunningForever; Instructions 1500]
 
     [<TestMethod>]
     member this.``Debugger: DebuggerReset reverts to clean state``() =
         cpu.Memory.Data.[0] <- byte Instruction.Hlt
         DebuggerSetBreakpoint debugger 10
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted; Instructions 1]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted; Instructions 1]
         DebuggerReset debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None; Instructions 0]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.None; Instructions 0]
         for i = 0 to cpu.Memory.Data.Length - 1 do
             Assert.IsFalse(debugger.Breakpoints.Contains(i))
         
     [<TestMethod>]
     member this.``Debugger: Debugger.LastStop works as expected``() =
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
         cpu.Memory.Data.[1] <- byte Instruction.Hlt
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted]
 
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
         DebuggerSetBreakpoint debugger 4
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint]
 
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
         cpu.Memory.Data.[5] <- byte Instruction.Hlt
         DebuggerSetBreakpoint debugger 5
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted]
 
         DebuggerStep debugger
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
 
         cpu.Memory.Data.[123] <- byte Instruction.Hlt
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted; Instructions 124]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted; Instructions 124]
         
     [<TestMethod>]
     member this.``Debugger: Breakpoints halts execution``() =
@@ -84,14 +86,14 @@ type DebuggerTests() =
         DebuggerSetBreakpoint debugger 50
         
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 12]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 12]
         
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 50]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions 50]
 
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 12)]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 12)]
 
         DebuggerRun debugger 1000
-        this.AssertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 50)]
+        assertDebuggerState [DebuggerLastStop DebuggerStopReason.Breakpoint; Instructions (256 + 50)]
 
