@@ -46,6 +46,9 @@ type CesarAssemblerTests() =
 
         AssembleInstruction "RTS R4" |>== [byte Instruction.Rts ||| byte Register.R4]
 
+        AssembleInstruction "NOT #15" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc; 0uy; 15uy]
+        AssembleInstruction "NOT 15"  |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 15uy]
+
         AssembleInstruction "NOT R7" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Register]
         AssembleInstruction "NOT (R7)+" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc]
         AssembleInstruction "NOT -(R7)" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDec]
@@ -54,6 +57,12 @@ type CesarAssemblerTests() =
         AssembleInstruction "NOT ((R7)+)" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect]
         AssembleInstruction "NOT (-(R7))" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDecIndirect]
         AssembleInstruction "NOT (2(R7))" |>== [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.IndexedIndirect; 0uy; 2uy]
+
+        let e = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPostInc Register.R7 AddressMode.Register Register.R1
+        AssembleInstruction "MOV #10, R1" |>== [byte (e >>> 8); byte e; 0uy; 10uy]
+
+        let f = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPostIncIndirect Register.R7 AddressMode.Register Register.R2
+        AssembleInstruction "MOV 1000, R2" |>== [byte (f >>> 8); byte f; 3uy; 232uy]
 
         let g = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Register Register.R1 AddressMode.RegPostInc Register.R2
         AssembleInstruction "MOV R1, (R2)+" |>== [byte (g >>> 8); byte g]

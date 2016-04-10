@@ -220,7 +220,7 @@ module Ramses =
 
     let DisassembleInstruction content =
         match content with
-        | [] -> ""
+        | [] -> "", 0
         | firstOpCode::tail -> 
             let register() =
                 let register = firstOpCode &&& RegisterMask |> EnumOfValue
@@ -229,7 +229,7 @@ module Ramses =
                 | Register.Rb -> " B"
                 | Register.Rx -> " X"
                 | Register.Pc -> " PC"
-                | _ -> failwith "Invalid Register"
+                | _ -> " ?"                      // Invalid register       
 
             let operand() =
                 let value = match tail with
@@ -241,24 +241,32 @@ module Ramses =
                 | AddressMode.Indirect  -> sprintf " %i,I" value
                 | AddressMode.Immediate -> sprintf " #%i" value
                 | AddressMode.Indexed   -> sprintf " %i,X" value
-                | _ -> failwith "Invalid AddressMode"
+                | _ ->  sprintf " %i,?" value    // Invalid AddressMode
 
             let instruction = firstOpCode &&& InstructionMask |> EnumOfValue
             match instruction with
-            | Instruction.Str -> "STR" + register() + operand()
-            | Instruction.Ldr -> "LDR" + register() + operand()
-            | Instruction.Add -> "ADD" + register() + operand()
-            | Instruction.Or  -> "OR " + register() + operand()
-            | Instruction.And -> "AND" + register() + operand()
-            | Instruction.Not -> "NOT" + register()
-            | Instruction.Sub -> "SUB" + register() + operand()
-            | Instruction.Jmp -> "JMP" + operand()
-            | Instruction.Jn  -> "JN " + operand()
-            | Instruction.Jz  -> "JZ " + operand()
-            | Instruction.Jc  -> "JC " + operand()
-            | Instruction.Jsr -> "JSR" + operand()
-            | Instruction.Neg -> "NEG" + register() 
-            | Instruction.Shr -> "SHR" + register()
-            | Instruction.Hlt -> "HLT"
+            | Instruction.Str -> "STR" + register() + operand(), 2
+            | Instruction.Ldr -> "LDR" + register() + operand(), 2
+            | Instruction.Add -> "ADD" + register() + operand(), 2
+            | Instruction.Or  -> "OR " + register() + operand(), 2
+            | Instruction.And -> "AND" + register() + operand(), 2
+            | Instruction.Not -> "NOT" + register(), 1
+            | Instruction.Sub -> "SUB" + register() + operand(), 2
+            | Instruction.Jmp -> "JMP" + operand(), 2
+            | Instruction.Jn  -> "JN " + operand(), 2
+            | Instruction.Jz  -> "JZ " + operand(), 2
+            | Instruction.Jc  -> "JC " + operand(), 2
+            | Instruction.Jsr -> "JSR" + operand(), 2
+            | Instruction.Neg -> "NEG" + register(), 1
+            | Instruction.Shr -> "SHR" + register(), 1
+            | Instruction.Hlt -> "HLT", 1
             | Instruction.Nop
-            | _ -> "NOP"
+            | _ -> "NOP", 1
+
+    let rec DisassembleInstructions content =
+        let output, size = DisassembleInstruction content
+        if size = 0 then
+            []
+        else
+            let rest = List.skip size content
+            (output, size) :: (DisassembleInstructions rest)

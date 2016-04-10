@@ -20,7 +20,7 @@ module CesarCmdLine =
                         printFlags "V" cpu.Registers.Flags.Overflow +
                         printFlags "C" cpu.Registers.Flags.Carry
         
-            let ir = DisassembleInstruction (List.ofArray cpu.Registers.InstructionRegister.Data)
+            let ir, _ = DisassembleInstruction (List.ofArray cpu.Registers.InstructionRegister.Data)
 
             let toBinary (value) =
                 Int64.Parse(Convert.ToString(int value, 2))

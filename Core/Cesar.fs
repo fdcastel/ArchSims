@@ -512,9 +512,20 @@ module Cesar =
 
     let DisassembleInstruction content =
         let data = Array.ofList content
-        if data.Length > 0 then
+        if data.Length = 0 then
+            "", 0
+        else 
             let firstOpCode = data.[0]
-            let mutable nextOperandIndex = 2
+
+            let instruction = firstOpCode &&& InstructionMask |> EnumOfValue
+
+            let mutable size = match instruction with
+                               | Instruction.Ccc
+                               | Instruction.Scc
+                               | Instruction.Rts
+                               | Instruction.Hlt
+                               | Instruction.Nop -> 1
+                               | _ -> 2
 
             let flags() =
                 let printFlag character mask = 
@@ -528,17 +539,25 @@ module Cesar =
             let register(reg) =
                 sprintf "R%i" (reg &&& RegisterMask)
 
-            let branchOperand() = 
-                sprintf "%i" data.[1]
+            let readData addr =
+                if addr < data.Length then data.[addr] else 0uy
 
             let getNextOperand() =
-                let result = (uint16 data.[nextOperandIndex] <<< 8) ||| (uint16 data.[nextOperandIndex + 1])
-                nextOperandIndex <- nextOperandIndex + 2
-                result
+                let result = uint16 (readData size) <<< 8 ||| uint16 (readData (size + 1))
+                size <- size + 2
+                result                
 
             let decodeOperand mode reg =
                 let r = register(reg)
-                match EnumOfValue mode with
+                let m = EnumOfValue mode
+
+                if reg = 7uy then
+                    match m with
+                    | AddressMode.RegPostInc 
+                    | AddressMode.RegPostIncIndirect -> size <- size + 2
+                    | _ -> ()
+
+                match m with
                 | AddressMode.Register           -> r
                 | AddressMode.RegPostInc         -> sprintf "(%s)+" r
                 | AddressMode.RegPreDec          -> sprintf "-(%s)" r
@@ -547,83 +566,98 @@ module Cesar =
                 | AddressMode.RegPostIncIndirect -> sprintf "((%s)+)" r
                 | AddressMode.RegPreDecIndirect  -> sprintf "(-(%s))" r
                 | AddressMode.IndexedIndirect    -> sprintf "(%i(%s))" (getNextOperand()) r
-                | _ -> failwith "Invalid AddressMode"
+                | _ -> "?" // Invalid AddressMode
                 
+            let branchOperand() =
+                sprintf "%i" (readData 1)
+
             let targetOperand() =
-                let secondOpCode = data.[1]
+                let secondOpCode = (readData 1)
                 let mode = secondOpCode &&& AddressModeMask
                 let reg = secondOpCode &&& RegisterMask
                 decodeOperand mode reg
 
             let jumpOperand() =
-                let secondOpCode = data.[1]
+                let secondOpCode = (readData 1)
                 let mode = secondOpCode &&& AddressModeMask
+
                 match LanguagePrimitives.EnumOfValue mode with
-                | AddressMode.Register -> "?" // Illegal mode for jumps
-                | _ -> targetOperand()                    
+                | AddressMode.Register -> "?" // Illegal mode for jumps. 
+                | _ -> targetOperand()
 
             let sourceOperand() =
-                let secondOpCode = data.[1]
+                let secondOpCode = (readData 1)
                 let mode = (firstOpCode <<< 2) &&& AddressModeMask
                 let reg = ((firstOpCode &&& 0x01uy) <<< 2) ||| (secondOpCode >>> 6) &&& RegisterMask
                 decodeOperand mode reg
 
-            let instruction = firstOpCode &&& InstructionMask |> EnumOfValue
-            match instruction with
-            | Instruction.Ccc -> ("CCC " + flags()).Trim()
-            | Instruction.Scc -> ("SCC " + flags()).Trim()
+            let output = 
+                match instruction with
+                | Instruction.Ccc -> ("CCC " + flags()).Trim()
+                | Instruction.Scc -> ("SCC " + flags()).Trim()
 
-            | Instruction.Br  -> 
-                let subInstruction = Instruction.Br ||| EnumOfValue (firstOpCode &&& SubInstructionMask)
-                match subInstruction with
-                | Instruction.Br  -> "BR  " + branchOperand()
-                | Instruction.Bne -> "BNE " + branchOperand()
-                | Instruction.Beq -> "BEQ " + branchOperand()
-                | Instruction.Bpl -> "BPL " + branchOperand()
-                | Instruction.Bmi -> "BMI " + branchOperand()
-                | Instruction.Bvc -> "BVC " + branchOperand()
-                | Instruction.Bvs -> "BVS " + branchOperand()
-                | Instruction.Bcc -> "BCC " + branchOperand()
-                | Instruction.Bcs -> "BCS " + branchOperand()
-                | Instruction.Bge -> "BGE " + branchOperand()
-                | Instruction.Blt -> "BLT " + branchOperand()
-                | Instruction.Bgt -> "BGT " + branchOperand()
-                | Instruction.Ble -> "BLE " + branchOperand()
-                | Instruction.Bhi -> "BHI " + branchOperand()
-                | Instruction.Bls -> "BLS " + branchOperand()
-                | _ -> "?"
+                | Instruction.Br  -> 
+                    let subInstruction = Instruction.Br ||| EnumOfValue (firstOpCode &&& SubInstructionMask)
+                    match subInstruction with
+                    | Instruction.Br  -> "BR  " + branchOperand()
+                    | Instruction.Bne -> "BNE " + branchOperand()
+                    | Instruction.Beq -> "BEQ " + branchOperand()
+                    | Instruction.Bpl -> "BPL " + branchOperand()
+                    | Instruction.Bmi -> "BMI " + branchOperand()
+                    | Instruction.Bvc -> "BVC " + branchOperand()
+                    | Instruction.Bvs -> "BVS " + branchOperand()
+                    | Instruction.Bcc -> "BCC " + branchOperand()
+                    | Instruction.Bcs -> "BCS " + branchOperand()
+                    | Instruction.Bge -> "BGE " + branchOperand()
+                    | Instruction.Blt -> "BLT " + branchOperand()
+                    | Instruction.Bgt -> "BGT " + branchOperand()
+                    | Instruction.Ble -> "BLE " + branchOperand()
+                    | Instruction.Bhi -> "BHI " + branchOperand()
+                    | Instruction.Bls -> "BLS " + branchOperand()
+                    | _ -> "?"
 
-            | Instruction.Jmp -> "JMP " + jumpOperand()
-            | Instruction.Sob -> "SOB " + register(data.[0]) + ", " + branchOperand()
-            | Instruction.Jsr -> "JSR " + register(data.[0]) + ", " + jumpOperand()
-            | Instruction.Rts -> "RTS " + register(data.[0])
+                | Instruction.Jmp -> "JMP " + jumpOperand()
+                | Instruction.Sob -> "SOB " + register(data.[0]) + ", " + branchOperand()
+                | Instruction.Jsr -> "JSR " + register(data.[0]) + ", " + jumpOperand()
+                | Instruction.Rts -> "RTS " + register(data.[0])
 
-            | Instruction.Clr ->
-                let subInstruction = Instruction.Clr ||| EnumOfValue (firstOpCode &&& SubInstructionMask)
-                match subInstruction with
-                | Instruction.Clr -> "CLR " + targetOperand()
-                | Instruction.Not -> "NOT " + targetOperand()
-                | Instruction.Inc -> "INC " + targetOperand()
-                | Instruction.Dec -> "DEC " + targetOperand()
-                | Instruction.Neg -> "NEG " + targetOperand()
-                | Instruction.Tst -> "TST " + targetOperand()
-                | Instruction.Ror -> "ROR " + targetOperand()
-                | Instruction.Rol -> "ROL " + targetOperand()
-                | Instruction.Asr -> "ASR " + targetOperand()
-                | Instruction.Asl -> "ASL " + targetOperand()
-                | Instruction.Adc -> "ADC " + targetOperand()
-                | Instruction.Sbc -> "SBC " + targetOperand()
-                | _ -> "?"
+                | Instruction.Clr ->
+                    let subInstruction = Instruction.Clr ||| EnumOfValue (firstOpCode &&& SubInstructionMask)
+                    match subInstruction with
+                    | Instruction.Clr -> "CLR " + targetOperand()
+                    | Instruction.Not -> "NOT " + targetOperand()
+                    | Instruction.Inc -> "INC " + targetOperand()
+                    | Instruction.Dec -> "DEC " + targetOperand()
+                    | Instruction.Neg -> "NEG " + targetOperand()
+                    | Instruction.Tst -> "TST " + targetOperand()
+                    | Instruction.Ror -> "ROR " + targetOperand()
+                    | Instruction.Rol -> "ROL " + targetOperand()
+                    | Instruction.Asr -> "ASR " + targetOperand()
+                    | Instruction.Asl -> "ASL " + targetOperand()
+                    | Instruction.Adc -> "ADC " + targetOperand()
+                    | Instruction.Sbc -> "SBC " + targetOperand()
+                    | _ -> "?"
 
-            | Instruction.Mov -> "MOV " + sourceOperand() + ", " + targetOperand()
-            | Instruction.Add -> "ADD " + sourceOperand() + ", " + targetOperand()
-            | Instruction.Sub -> "SUB " + sourceOperand() + ", " + targetOperand()
-            | Instruction.Cmp -> "CMP " + sourceOperand() + ", " + targetOperand()
-            | Instruction.And -> "AND " + sourceOperand() + ", " + targetOperand()
-            | Instruction.Or  -> "OR  " + sourceOperand() + ", " + targetOperand()
+                | Instruction.Mov -> "MOV " + sourceOperand() + ", " + targetOperand()
+                | Instruction.Add -> "ADD " + sourceOperand() + ", " + targetOperand()
+                | Instruction.Sub -> "SUB " + sourceOperand() + ", " + targetOperand()
+                | Instruction.Cmp -> "CMP " + sourceOperand() + ", " + targetOperand()
+                | Instruction.And -> "AND " + sourceOperand() + ", " + targetOperand()
+                | Instruction.Or  -> "OR  " + sourceOperand() + ", " + targetOperand()
 
-            | Instruction.Hlt -> "HLT"
-            | Instruction.Nop
-            | _ -> "NOP"
-        else 
-            ""
+                | Instruction.Hlt -> "HLT"
+                | Instruction.Nop
+                | _ -> "NOP"
+            
+            if size > content.Length then
+                ("", 0)
+            else
+                (output, size)
+
+    let rec DisassembleInstructions content =
+        let output, size = DisassembleInstruction content
+        if size = 0 then
+            []
+        else
+            let rest = List.skip size content
+            (output, size) :: (DisassembleInstructions rest)

@@ -19,7 +19,7 @@ module RamsesCmdLine =
                         printFlags "Z" cpu.Registers.Flags.Zero +
                         printFlags "C" cpu.Registers.Flags.Carry
         
-            let ir = DisassembleInstruction [cpu.Registers.InstructionRegister.OpCode; cpu.Registers.InstructionRegister.OperandAddress]
+            let ir, _ = DisassembleInstruction [cpu.Registers.InstructionRegister.OpCode; cpu.Registers.InstructionRegister.OperandAddress]
 
             let toBinary (value:byte) =
                 Int32.Parse(Convert.ToString(value, 2))

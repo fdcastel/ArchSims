@@ -317,26 +317,37 @@ type RamsesTests() =
 
     [<TestMethod>]
     member this.``Ramses: DisassembleInstruction works as expected``() =
-        DisassembleInstruction [byte Instruction.Nop] |>== "NOP"
-        DisassembleInstruction [byte Instruction.Nop + 5uy] |>== "NOP"
-        DisassembleInstruction [byte Instruction.Hlt] |>== "HLT"
+        DisassembleInstruction [byte Instruction.Nop] |>== ("NOP", 1)
+        DisassembleInstruction [byte Instruction.Nop + 5uy] |>== ("NOP", 1)
+        DisassembleInstruction [byte Instruction.Hlt] |>== ("HLT", 1)
 
-        DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy] |>== "STR A 12"
-        DisassembleInstruction [byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy] |>== "STR B 23,I"
-        DisassembleInstruction [byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy] |>== "STR X #34"
-        DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy] |>== "STR A 45,X"
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy] |>== ("STR A 12", 2)
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy] |>== ("STR B 23,I", 2)
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy] |>== ("STR X #34", 2)
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy] |>== ("STR A 45,X", 2)
 
-        DisassembleInstruction [byte Instruction.Not ||| byte Register.Ra] |>== "NOT A"
-        DisassembleInstruction [byte Instruction.Not ||| byte Register.Rb] |>== "NOT B"
-        DisassembleInstruction [byte Instruction.Not ||| byte Register.Rx] |>== "NOT X"
+        DisassembleInstruction [byte Instruction.Not ||| byte Register.Ra] |>== ("NOT A", 1)
+        DisassembleInstruction [byte Instruction.Not ||| byte Register.Rb] |>== ("NOT B", 1)
+        DisassembleInstruction [byte Instruction.Not ||| byte Register.Rx] |>== ("NOT X", 1)
 
-        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy] |>== "JMP 12"
-        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy] |>== "JMP 23,I"
-        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy] |>== "JMP #34"
-        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy] |>== "JMP 45,X"
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy] |>== ("JMP 12", 2)
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy] |>== ("JMP 23,I", 2)
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy] |>== ("JMP #34", 2)
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy] |>== ("JMP 45,X", 2)
 
-        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 0uy] |>== "LDR X #0"
-        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 127uy] |>== "LDR X #127"
-        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy] |>== "LDR X #128"
-        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy] |>== "LDR X #255"
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 0uy] |>== ("LDR X #0", 2)
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 127uy] |>== ("LDR X #127", 2)
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy] |>== ("LDR X #128", 2)
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy] |>== ("LDR X #255", 2)
 
+    [<TestMethod>]
+    member this.``Ramses: DisassembleInstructions works as expected``() =
+
+        let content = [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy] @
+                      [byte Instruction.Not ||| byte Register.Rb] @
+                      [byte Instruction.Nop] @
+                      [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy] @
+                      [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy] @
+                      [byte Instruction.Hlt]
+
+        DisassembleInstructions content |>== [("STR A 12", 2); ("NOT B", 1); ("NOP", 1); ("JMP 23,I", 2); ("LDR X #255", 2); ("HLT", 1)]

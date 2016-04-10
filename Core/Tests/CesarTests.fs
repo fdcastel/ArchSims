@@ -536,53 +536,124 @@ type CesarTests() =
 
     [<TestMethod>]
     member this.``Cesar: DisassembleInstruction works as expected``() =
-        DisassembleInstruction [byte Instruction.Nop] |>== "NOP"
-        DisassembleInstruction [byte Instruction.Nop + 5uy] |>== "NOP"
-        DisassembleInstruction [byte Instruction.Hlt] |>== "HLT"
+        DisassembleInstruction [byte Instruction.Nop] |>== ("NOP", 1)
+        DisassembleInstruction [byte Instruction.Nop + 5uy] |>== ("NOP", 1)
+        DisassembleInstruction [byte Instruction.Hlt] |>== ("HLT", 1)
 
-        DisassembleInstruction [byte Instruction.Ccc] |>== "CCC"
-        DisassembleInstruction [byte Instruction.Ccc ||| byte Flag.Negative ||| byte Flag.Zero ||| byte Flag.Overflow ||| byte Flag.Carry] |>== "CCC NZVC"
-        DisassembleInstruction [byte Instruction.Scc] |>== "SCC"
-        DisassembleInstruction [byte Instruction.Scc ||| byte Flag.Zero ||| byte Flag.Carry] |>== "SCC ZC"
+        DisassembleInstruction [byte Instruction.Ccc] |>== ("CCC", 1)
+        DisassembleInstruction [byte Instruction.Ccc ||| byte Flag.Negative ||| byte Flag.Zero ||| byte Flag.Overflow ||| byte Flag.Carry] |>== ("CCC NZVC", 1)
+        DisassembleInstruction [byte Instruction.Scc] |>== ("SCC", 1)
+        DisassembleInstruction [byte Instruction.Scc ||| byte Flag.Zero ||| byte Flag.Carry] |>== ("SCC ZC", 1)
 
-        DisassembleInstruction [byte Instruction.Br; 0uy] |>== "BR  0"
-        DisassembleInstruction [byte Instruction.Bne; 10uy] |>== "BNE 10"
-        DisassembleInstruction [byte Instruction.Bne; 246uy] |>== "BNE 246"
+        DisassembleInstruction [byte Instruction.Br; 0uy] |>== ("BR  0", 2)
+        DisassembleInstruction [byte Instruction.Bne; 10uy] |>== ("BNE 10", 2)
+        DisassembleInstruction [byte Instruction.Bne; 246uy] |>== ("BNE 246", 2)
 
-        DisassembleInstruction [byte Instruction.Jmp; byte Register.R7] |>== "JMP ?" // Invalid!
-        DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc] |>== "JMP (R7)+"
-        DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect] |>== "JMP ((R7)+)"
+        DisassembleInstruction [byte Instruction.Jmp; byte Register.R1] |>== ("JMP ?", 2) // Invalid!
+        DisassembleInstruction [byte Instruction.Jmp; byte Register.R1 ||| byte AddressMode.RegPostInc] |>== ("JMP (R1)+", 2)
+        DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostInc; 0uy; 0uy] |>== ("JMP (R7)+", 4)
+        DisassembleInstruction [byte Instruction.Jmp; byte Register.R1 ||| byte AddressMode.RegPostIncIndirect] |>== ("JMP ((R1)+)", 2)
+        DisassembleInstruction [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 0uy] |>== ("JMP ((R7)+)", 4)
 
-        DisassembleInstruction [byte Instruction.Sob ||| byte Register.R1; 123uy] |>== "SOB R1, 123"
-        DisassembleInstruction [byte Instruction.Sob ||| byte Register.R2; 234uy] |>== "SOB R2, 234"
+        DisassembleInstruction [byte Instruction.Sob ||| byte Register.R1; 123uy] |>== ("SOB R1, 123", 2)
+        DisassembleInstruction [byte Instruction.Sob ||| byte Register.R2; 234uy] |>== ("SOB R2, 234", 2)
 
-        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R1; byte Register.R7] |>== "JSR R1, ?" // Invalid!
-        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R2; byte Register.R7 ||| byte AddressMode.RegPostInc] |>== "JSR R2, (R7)+"
-        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R3; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect] |>== "JSR R3, ((R7)+)"
+        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R1; byte Register.R7] |>== ("JSR R1, ?", 2) // Invalid!
+        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R2; byte Register.R5 ||| byte AddressMode.RegPostInc] |>== ("JSR R2, (R5)+", 2)
+        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R2; byte Register.R7 ||| byte AddressMode.RegPostInc; 0uy; 0uy] |>== ("JSR R2, (R7)+", 4)
+        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R3; byte Register.R5 ||| byte AddressMode.RegPostIncIndirect] |>== ("JSR R3, ((R5)+)", 2)
+        DisassembleInstruction [byte Instruction.Jsr ||| byte Register.R3; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 0uy] |>== ("JSR R3, ((R7)+)", 4)
 
-        DisassembleInstruction [byte Instruction.Rts ||| byte Register.R4] |>== "RTS R4"
+        DisassembleInstruction [byte Instruction.Rts ||| byte Register.R4] |>== ("RTS R4", 1)
 
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Register] |>== "NOT R7"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc] |>== "NOT (R7)+"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDec] |>== "NOT -(R7)"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Indexed; 0uy; 2uy] |>== "NOT 2(R7)"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegisterIndirect] |>== "NOT (R7)"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect] |>== "NOT ((R7)+)"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDecIndirect] |>== "NOT (-(R7))"
-        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.IndexedIndirect; 0uy; 2uy] |>== "NOT (2(R7))"
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc; 0uy; 15uy] |>== ("NOT (R7)+", 4)             // NOT #15
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 15uy] |>== ("NOT ((R7)+)", 4)   // NOT 15
+
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Register] |>== ("NOT R7", 2)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostInc; 0uy; 0uy] |>== ("NOT (R7)+", 4)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDec] |>== ("NOT -(R7)", 2)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Indexed; 0uy; 2uy] |>== ("NOT 2(R7)", 4)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegisterIndirect] |>== ("NOT (R7)", 2)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 0uy] |>== ("NOT ((R7)+)", 4)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.RegPreDecIndirect] |>== ("NOT (-(R7))", 2)
+        DisassembleInstruction [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.IndexedIndirect; 0uy; 2uy] |>== ("NOT (2(R7))", 4)
+
+        let e = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPostInc Register.R7 AddressMode.Register Register.R1
+        DisassembleInstruction [byte (e >>> 8); byte e; 0uy; 10uy] |>== ("MOV (R7)+, R1", 4)       // MOV #10, R1
+
+        let f = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPostIncIndirect Register.R7 AddressMode.Register Register.R2
+        DisassembleInstruction [byte (f >>> 8); byte f; 3uy; 232uy] |>== ("MOV ((R7)+), R2", 4)    // MOV 1000, R2
 
         let g = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Register Register.R1 AddressMode.RegPostInc Register.R2
-        DisassembleInstruction [byte (g >>> 8); byte g] |>== "MOV R1, (R2)+"
+        DisassembleInstruction [byte (g >>> 8); byte g] |>== ("MOV R1, (R2)+", 2)
 
         let h = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegisterIndirect Register.R1 AddressMode.RegPreDec Register.R2
-        DisassembleInstruction [byte (h >>> 8); byte h] |>== "MOV (R1), -(R2)"
+        DisassembleInstruction [byte (h >>> 8); byte h] |>== ("MOV (R1), -(R2)", 2)
 
         let i = EncodeInstructionTwoOperand Instruction.Mov AddressMode.Indexed Register.R1 AddressMode.RegPostIncIndirect Register.R2
-        DisassembleInstruction [byte (i >>> 8); byte i; 0uy; 10uy] |>== "MOV 10(R1), ((R2)+)"
+        DisassembleInstruction [byte (i >>> 8); byte i; 0uy; 10uy] |>== ("MOV 10(R1), ((R2)+)", 4)
 
         let j = EncodeInstructionTwoOperand Instruction.Mov AddressMode.IndexedIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
-        DisassembleInstruction [byte (j >>> 8); byte j; 0uy; 10uy; 0uy; 20uy] |>== "MOV (10(R1)), (20(R2))"
+        DisassembleInstruction [byte (j >>> 8); byte j; 0uy; 10uy; 0uy; 20uy] |>== ("MOV (10(R1)), (20(R2))", 6)
 
         let k = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPreDecIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
-        DisassembleInstruction [byte (k >>> 8); byte k; 0uy; 20uy] |>== "MOV (-(R1)), (20(R2))"
+        DisassembleInstruction [byte (k >>> 8); byte k; 0uy; 20uy] |>== ("MOV (-(R1)), (20(R2))", 4)
 
+    [<TestMethod>]
+    member this.``Cesar: DisassembleInstructions works as expected``() =
+
+        let j = EncodeInstructionTwoOperand Instruction.Mov AddressMode.IndexedIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
+
+        let p1 = [byte Instruction.Ccc ||| byte Flag.Negative ||| byte Flag.Zero ||| byte Flag.Overflow ||| byte Flag.Carry] @
+                 [byte Instruction.Bne; 10uy] @
+                 [byte Instruction.Nop] @
+                 [byte Instruction.Jmp; byte Register.R7 ||| byte AddressMode.RegPostIncIndirect; 0uy; 0uy] @
+                 [byte Instruction.Rts ||| byte Register.R4] @
+                 [byte Instruction.Not; byte Register.R7 ||| byte AddressMode.Indexed; 0uy; 2uy] @
+                 [byte (j >>> 8); byte j; 0uy; 10uy; 0uy; 20uy] @
+                 [byte Instruction.Hlt]
+
+        DisassembleInstructions p1 |>== [("CCC NZVC", 1); 
+                                         ("BNE 10", 2); 
+                                         ("NOP", 1); 
+                                         ("JMP ((R7)+)", 4); 
+                                         ("RTS R4", 1); 
+                                         ("NOT 2(R7)", 4); 
+                                         ("MOV (10(R1)), (20(R2))", 6); 
+                                         ("HLT", 1)]
+
+        let p2 = [147uy;193uy;0uy;10uy;          // MOV #10, R1
+                  155uy;194uy;3uy;232uy;         // MOV 1000, R2
+                  155uy;195uy;0uy;20uy;          // MOV :L1, R3     (:L1 = 20)
+                  155uy;196uy;3uy;234uy;         // MOV :L2, R4     (:L2 = 1002)
+                  155uy;197uy;3uy;234uy;         // MOV :L2, R5
+                  240uy;                         // HLT
+                  0uy;                           // NOP
+                  0uy;                           // NOP
+                  48uy;251uy;                    // BR :L1          (-5)
+                  81uy;7uy;                      // SOB R1, :L1     (7)
+                  64uy;47uy;0uy;20uy;            // JMP :L1
+                  48uy;8uy;                      // BR :L3          (8)
+                  83uy;250uy;                    // SOB R3, :L3     (-6)
+                  64uy;47uy;0uy;41uy;            // JMP :L3         (:L3 = 41)
+                  0uy;                           // NOP
+                  0uy;                           // NOP
+                  64uy;47uy;3uy;234uy]           // JMP :L2
+
+        DisassembleInstructions p2 |>== [("MOV (R7)+, R1", 4); 
+                                         ("MOV ((R7)+), R2", 4); 
+                                         ("MOV ((R7)+), R3", 4);
+                                         ("MOV ((R7)+), R4", 4); 
+                                         ("MOV ((R7)+), R5", 4); 
+                                         ("HLT", 1); 
+                                         ("NOP", 1);
+                                         ("NOP", 1); 
+                                         ("BR  251", 2); 
+                                         ("SOB R1, 7", 2); 
+                                         ("JMP ((R7)+)", 4); 
+                                         ("BR  8", 2);
+                                         ("SOB R3, 250", 2);
+                                         ("JMP ((R7)+)", 4);
+                                         ("NOP", 1);
+                                         ("NOP", 1);
+                                         ("JMP ((R7)+)", 4)]
