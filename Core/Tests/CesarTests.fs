@@ -24,6 +24,8 @@ type CesarState =
     | FlagsOverflow of bool
     | FlagsCarry of bool
     | MemoryAt of int * byte
+    | InstructionRegisterAt of int * int
+    | InstructionRegisterIs of byte list
     | None
 
 [<TestClass>]
@@ -49,6 +51,8 @@ type CesarTests() =
             | FlagsOverflow z -> cpu.Registers.Flags.Overflow |>== z
             | FlagsCarry c -> cpu.Registers.Flags.Carry |>== c
             | MemoryAt (addr, v) -> cpu.Memory.Data.[addr] |>== v
+            | InstructionRegisterAt (addr, size) -> cpu.Registers.InstructionRegister.Data |> equalsArr (Array.sub cpu.Memory.Data addr size)
+            | InstructionRegisterIs data -> List.ofArray cpu.Registers.InstructionRegister.Data |>== data
             | None -> ()
 
     let assertCpuStateIsClean() =
@@ -68,19 +72,19 @@ type CesarTests() =
             match addressMode with
             | AddressMode.Register ->
                 cpu.Registers.R.[1] <- 0x1234us
-                [R0 0x1234us; R1 0x1234us; ProgramCounter 2us; MemoryReads 2]
+                [R0 0x1234us; R1 0x1234us; ProgramCounter 2us; MemoryReads 2; InstructionRegisterAt (0, 2)]
 
             | AddressMode.RegPostInc ->
                 cpu.Memory.Data.[10] <- 0x12uy
                 cpu.Memory.Data.[11] <- 0x34uy
                 cpu.Registers.R.[1] <- 10us
-                [R0 0x1234us; R1 12us; ProgramCounter 2us; MemoryReads 4]
+                [R0 0x1234us; R1 12us; ProgramCounter 2us; MemoryReads 4; InstructionRegisterAt (0, 2)]
 
             | AddressMode.RegPreDec ->
                 cpu.Memory.Data.[10] <- 0x12uy
                 cpu.Memory.Data.[11] <- 0x34uy
                 cpu.Registers.R.[1] <- 12us
-                [R0 0x1234us; R1 10us; ProgramCounter 2us; MemoryReads 4]
+                [R0 0x1234us; R1 10us; ProgramCounter 2us; MemoryReads 4; InstructionRegisterAt (0, 2)]
 
             | AddressMode.Indexed ->
                 cpu.Memory.Data.[2] <- 0uy
@@ -88,13 +92,13 @@ type CesarTests() =
                 cpu.Memory.Data.[10] <- 0x12uy
                 cpu.Memory.Data.[11] <- 0x34uy
                 cpu.Registers.R.[1] <- 6us
-                [R0 0x1234us; R1 6us; ProgramCounter 4us; MemoryReads 6]
+                [R0 0x1234us; R1 6us; ProgramCounter 4us; MemoryReads 6; InstructionRegisterAt (0, 4)]
 
             | AddressMode.RegisterIndirect ->
                 cpu.Memory.Data.[10] <- 0x12uy
                 cpu.Memory.Data.[11] <- 0x34uy
                 cpu.Registers.R.[1] <- 10us
-                [R0 0x1234us; R1 10us; ProgramCounter 2us; MemoryReads 4]
+                [R0 0x1234us; R1 10us; ProgramCounter 2us; MemoryReads 4; InstructionRegisterAt (0, 2)]
 
             | AddressMode.RegPostIncIndirect ->
                 cpu.Memory.Data.[10] <- 0uy
@@ -102,7 +106,7 @@ type CesarTests() =
                 cpu.Memory.Data.[20] <- 0x12uy
                 cpu.Memory.Data.[21] <- 0x34uy
                 cpu.Registers.R.[1] <- 10us
-                [R0 0x1234us; R1 12us; ProgramCounter 2us; MemoryReads 6]
+                [R0 0x1234us; R1 12us; ProgramCounter 2us; MemoryReads 6; InstructionRegisterAt (0, 2)]
 
             | AddressMode.RegPreDecIndirect ->
                 cpu.Memory.Data.[10] <- 0uy
@@ -110,7 +114,7 @@ type CesarTests() =
                 cpu.Memory.Data.[20] <- 0x12uy
                 cpu.Memory.Data.[21] <- 0x34uy
                 cpu.Registers.R.[1] <- 12us
-                [R0 0x1234us; R1 10us; ProgramCounter 2us; MemoryReads 6]
+                [R0 0x1234us; R1 10us; ProgramCounter 2us; MemoryReads 6; InstructionRegisterAt (0, 2)]
 
             | AddressMode.IndexedIndirect ->
                 cpu.Memory.Data.[2] <- 0uy
@@ -120,7 +124,7 @@ type CesarTests() =
                 cpu.Memory.Data.[20] <- 0x12uy
                 cpu.Memory.Data.[21] <- 0x34uy
                 cpu.Registers.R.[1] <- 6us
-                [R0 0x1234us; R1 6us; ProgramCounter 4us; MemoryReads 8]
+                [R0 0x1234us; R1 6us; ProgramCounter 4us; MemoryReads 8; InstructionRegisterAt (0, 4)]
 
             | _ -> failwith "Invalid AddressMode"
 
@@ -136,16 +140,14 @@ type CesarTests() =
         Step cpu
 
         let newAddress = address + (if branchExpected then 5 else 2)
-        assertCesarState [ProgramCounter (uint16 newAddress); MemoryReads (memoryReads + 2)]
-        assertCesarState expectedState
+        [ProgramCounter (uint16 newAddress); MemoryReads (memoryReads + 2); InstructionRegisterAt (address, 2)] @ expectedState |> assertCesarState
 
         cpu.Memory.Data.[newAddress] <- byte instruction
         cpu.Memory.Data.[newAddress + 1] <- 253uy
         Step cpu
 
         let finalAddress = newAddress + (if branchExpected then -1 else 2)
-        assertCesarState [ProgramCounter (uint16 finalAddress); MemoryReads (memoryReads + 4)]
-        assertCesarState expectedState
+        [ProgramCounter (uint16 finalAddress); MemoryReads (memoryReads + 4); InstructionRegisterAt (newAddress, 2)] @ expectedState |> assertCesarState 
 
     let testClrGroupOperation instruction value expectedResult expectedState =
         let address = int cpu.Registers.R.[7]
@@ -156,10 +158,9 @@ type CesarTests() =
         cpu.Registers.R.[4] <- value
         Step cpu
 
-        assertCesarState [R4 expectedResult; ProgramCounter (uint16 address + 2us); 
-                               FlagsNegative (expectedResult > 0x7FFFus); FlagsZero (expectedResult = 0us);
-                               MemoryReads (memoryReads + 2)]
-        assertCesarState expectedState
+        [R4 expectedResult; ProgramCounter (uint16 address + 2us); 
+         FlagsNegative (expectedResult > 0x7FFFus); FlagsZero (expectedResult = 0us);
+         MemoryReads (memoryReads + 2); InstructionRegisterAt (address, 2)] @ expectedState |> assertCesarState
 
     let testMovGroupOperation instruction sourceValue targetValue expectedResult expectedState =
         let encodedInstruction = EncodeInstructionTwoOperand instruction AddressMode.Register Register.R5 AddressMode.Register Register.R6
@@ -170,24 +171,7 @@ type CesarTests() =
         Step cpu
 
         let expectedR6 = if instruction = Instruction.Cmp then targetValue else expectedResult
-
-        assertCesarState [R5 sourceValue; R6 expectedR6; ProgramCounter 2us; MemoryReads 2]
-        assertCesarState expectedState
-
-    let testCmpOperation sourceValue targetValue =
-        Reset cpu
-        testMovGroupOperation Instruction.Cmp sourceValue targetValue 0us []
-
-        let source = if sourceValue > 0x7FFFus then -(0x10000 - int sourceValue) else int sourceValue
-        let target = if targetValue > 0x7FFFus then -(0x10000 - int targetValue) else int targetValue
-        let expectedState = [R5 sourceValue; R6 targetValue]
-
-        testBranchOperation Instruction.Bne (source <> target) expectedState
-        testBranchOperation Instruction.Beq (source = target) expectedState
-        testBranchOperation Instruction.Bge (source >= target) expectedState
-        testBranchOperation Instruction.Blt (source <  target) expectedState
-        testBranchOperation Instruction.Bgt (source >  target) expectedState
-        testBranchOperation Instruction.Ble (source <= target) expectedState
+        [R5 sourceValue; R6 expectedR6; ProgramCounter 2us; MemoryReads 2; InstructionRegisterAt (0, 2)] @ expectedState |> assertCesarState
 
     member this.Cpu
         with get () = cpu
@@ -238,21 +222,23 @@ type CesarTests() =
         cpu.Memory.Data.[0] <- byte Instruction.Not
         cpu.Memory.Data.[1] <- byte Register.R7 ||| byte AddressMode.Register
         Step cpu
-        assertCesarState [ProgramCounter 65533us; MemoryReads 2]
+        assertCesarState [ProgramCounter 65533us; MemoryReads 2; InstructionRegisterAt (0, 2)]
 
         Reset cpu
         cpu.Registers.R.[7] <- 2us
         cpu.Memory.Data.[2] <- byte Instruction.Not
         cpu.Memory.Data.[3] <- byte Register.R7 ||| byte AddressMode.RegPostInc
+        cpu.Memory.Data.[4] <- 0uy
+        cpu.Memory.Data.[5] <- 10uy  // NOT #10: will read R7 + 2 as operand
         Step cpu
-        assertCesarState [ProgramCounter 6us; MemoryReads 4; MemoryWrites 2; MemoryAt (4, 255uy); MemoryAt (5, 255uy)]
+        assertCesarState [ProgramCounter 6us; MemoryReads 4; MemoryWrites 2; MemoryAt (4, 255uy); MemoryAt (5, 245uy); InstructionRegisterIs [129uy; 15uy; 0uy; 4uy]]
 
         Reset cpu
         cpu.Registers.R.[7] <- 6us
         cpu.Memory.Data.[6] <- byte Instruction.Not
         cpu.Memory.Data.[7] <- byte Register.R7 ||| byte AddressMode.RegPreDec
         Step cpu
-        assertCesarState [ProgramCounter 6us; MemoryReads 4; MemoryWrites 2; MemoryAt (6, 126uy); MemoryAt (7, 232uy)]
+        assertCesarState [ProgramCounter 6us; MemoryReads 4; MemoryWrites 2; MemoryAt (6, 126uy); MemoryAt (7, 232uy); InstructionRegisterIs [129uy; 23uy]]
 
         Reset cpu
         cpu.Registers.R.[7] <- 8us
@@ -261,28 +247,30 @@ type CesarTests() =
         cpu.Memory.Data.[10] <- 0uy
         cpu.Memory.Data.[11] <- 2uy
         Step cpu
-        assertCesarState [ProgramCounter 12us; MemoryReads 6; MemoryWrites 2; MemoryAt (14, 255uy); MemoryAt (15, 255uy)]
+        assertCesarState [ProgramCounter 12us; MemoryReads 6; MemoryWrites 2; MemoryAt (14, 255uy); MemoryAt (15, 255uy); InstructionRegisterIs [129uy; 31uy; 0uy; 2uy]]
 
         Reset cpu
         cpu.Registers.R.[7] <- 16us
         cpu.Memory.Data.[16] <- byte Instruction.Not
         cpu.Memory.Data.[17] <- byte Register.R7 ||| byte AddressMode.RegisterIndirect
         Step cpu
-        assertCesarState [ProgramCounter 18us; MemoryReads 4; MemoryWrites 2; MemoryAt (18, 255uy); MemoryAt (19, 255uy)]
+        assertCesarState [ProgramCounter 18us; MemoryReads 4; MemoryWrites 2; MemoryAt (18, 255uy); MemoryAt (19, 255uy); InstructionRegisterIs [129uy; 39uy]]
 
         Reset cpu
         cpu.Registers.R.[7] <- 20us
         cpu.Memory.Data.[20] <- byte Instruction.Not
         cpu.Memory.Data.[21] <- byte Register.R7 ||| byte AddressMode.RegPostIncIndirect
+        cpu.Memory.Data.[22] <- 0uy
+        cpu.Memory.Data.[23] <- 0uy
         Step cpu
-        assertCesarState [ProgramCounter 24us; MemoryReads 6; MemoryWrites 2; MemoryAt (0, 255uy); MemoryAt (1, 255uy)]
+        assertCesarState [ProgramCounter 24us; MemoryReads 6; MemoryWrites 2; MemoryAt (0, 255uy); MemoryAt (1, 255uy); InstructionRegisterAt (20, 4)]
 
         Reset cpu
         cpu.Registers.R.[7] <- 24us
         cpu.Memory.Data.[24] <- byte Instruction.Not
         cpu.Memory.Data.[25] <- byte Register.R7 ||| byte AddressMode.RegPreDecIndirect
         Step cpu
-        assertCesarState [ProgramCounter 24us; MemoryReads 6; MemoryWrites 2; MemoryAt (33079, 255uy); MemoryAt (33080, 255uy)]
+        assertCesarState [ProgramCounter 24us; MemoryReads 6; MemoryWrites 2; MemoryAt (33079, 255uy); MemoryAt (33080, 255uy); InstructionRegisterAt (24, 2)]
 
         Reset cpu
         cpu.Registers.R.[7] <- 26us
@@ -291,13 +279,13 @@ type CesarTests() =
         cpu.Memory.Data.[28] <- 0uy
         cpu.Memory.Data.[29] <- 2uy
         Step cpu
-        assertCesarState [ProgramCounter 30us; MemoryReads 8; MemoryWrites 2; MemoryAt (0, 255uy); MemoryAt (1, 255uy)]
+        assertCesarState [ProgramCounter 30us; MemoryReads 8; MemoryWrites 2; MemoryAt (0, 255uy); MemoryAt (1, 255uy); InstructionRegisterAt (26, 4)]
 
     [<TestMethod>]
     member this.``Cesar: NOP does nothing``() =
         cpu.Memory.Data.[0] <- byte Instruction.Nop
         Step cpu
-        assertCesarState [ProgramCounter 1us; MemoryReads 1]
+        assertCesarState [ProgramCounter 1us; MemoryReads 1; InstructionRegisterAt (0, 1)]
 
     [<TestMethod>]
     member this.``Cesar: CCC clears flags``() =
@@ -316,10 +304,11 @@ type CesarTests() =
             let mustClearOverflow = (flags &&& int Flag.Overflow) <> 0
             let mustClearCarry = (flags &&& int Flag.Carry) <> 0
             
-            assertCesarState [ FlagsNegative (not mustClearNegative);
-                                    FlagsZero (not mustClearZero);
-                                    FlagsOverflow (not mustClearOverflow);
-                                    FlagsCarry (not mustClearCarry) ]
+            assertCesarState [FlagsNegative (not mustClearNegative);
+                              FlagsZero (not mustClearZero);
+                              FlagsOverflow (not mustClearOverflow);
+                              FlagsCarry (not mustClearCarry); 
+                              InstructionRegisterAt (0, 1)]
 
     [<TestMethod>]
     member this.``Cesar: SCC sets flags``() =
@@ -338,10 +327,11 @@ type CesarTests() =
             let mustSetOverflow = (flags &&& int Flag.Overflow) <> 0
             let mustSetCarry = (flags &&& int Flag.Carry) <> 0
             
-            assertCesarState [ FlagsNegative mustSetNegative;
-                                    FlagsZero mustSetZero;
-                                    FlagsOverflow mustSetOverflow;
-                                    FlagsCarry mustSetCarry ]
+            assertCesarState [FlagsNegative mustSetNegative;
+                              FlagsZero mustSetZero;
+                              FlagsOverflow mustSetOverflow;
+                              FlagsCarry mustSetCarry;
+                              InstructionRegisterAt (0, 1)]
 
     [<TestMethod>]
     member this.``Cesar: Branches instructions works as expected``() =
@@ -375,23 +365,23 @@ type CesarTests() =
         cpu.Memory.Data.[1] <- byte AddressMode.RegisterIndirect ||| byte Register.R1
         cpu.Registers.R.[1] <- 10us
         Step cpu
-        assertCesarState [R1 10us; ProgramCounter 10us; MemoryReads 2]
+        assertCesarState [R1 10us; ProgramCounter 10us; MemoryReads 2; InstructionRegisterAt (0, 2)]
 
         Reset cpu
         cpu.Memory.Data.[0] <- byte Instruction.Jmp
         cpu.Memory.Data.[1] <- byte AddressMode.RegPostIncIndirect ||| byte Register.R7
         cpu.Memory.Data.[2] <- 0uy
-        cpu.Memory.Data.[3] <- 10uy
+        cpu.Memory.Data.[3] <- 10uy  // JMP 10
         Step cpu
-        assertCesarState [ProgramCounter 10us; MemoryReads 4]
+        assertCesarState [ProgramCounter 10us; MemoryReads 4; InstructionRegisterAt (0, 4)]
 
         Reset cpu
         cpu.Memory.Data.[0] <- byte Instruction.Jmp
         cpu.Memory.Data.[1] <- byte AddressMode.RegPostInc ||| byte Register.R7
         cpu.Memory.Data.[2] <- 0uy
-        cpu.Memory.Data.[3] <- 10uy
+        cpu.Memory.Data.[3] <- 10uy  // JMP #10: will read R7 + 2 as operand
         Step cpu
-        assertCesarState [ProgramCounter 2us; MemoryReads 2]
+        assertCesarState [ProgramCounter 2us; MemoryReads 2; InstructionRegisterIs [64uy; 15uy; 0uy; 2uy]]
 
     [<TestMethod>]
     member this.``Cesar: SOB subtracts one and branch``() =
@@ -401,11 +391,11 @@ type CesarTests() =
         cpu.Registers.R.[7] <- 10us
 
         Step cpu
-        assertCesarState [R2 2us; ProgramCounter 10us; MemoryReads 2]
+        assertCesarState [R2 2us; ProgramCounter 10us; MemoryReads 2; InstructionRegisterAt (10, 2)]
         Step cpu
-        assertCesarState [R2 1us; ProgramCounter 10us; MemoryReads 4]
+        assertCesarState [R2 1us; ProgramCounter 10us; MemoryReads 4; InstructionRegisterAt (10, 2)]
         Step cpu
-        assertCesarState [R2 0us; ProgramCounter 12us; MemoryReads 6]
+        assertCesarState [R2 0us; ProgramCounter 12us; MemoryReads 6; InstructionRegisterAt (10, 2)]
 
     [<TestMethod>]
     member this.``Cesar: JSR jumps to subroutine``() =
@@ -414,14 +404,14 @@ type CesarTests() =
         cpu.Registers.R.[1] <- 123us
         cpu.Registers.R.[3] <- 0x1234us
         Step cpu
-        assertCesarState [R1 123us; R3 2us; R6 65534us; ProgramCounter 123us; MemoryReads 2; MemoryAt (65534, 0x12uy); MemoryAt (65535, 0x34uy)]
+        assertCesarState [R1 123us; R3 2us; R6 65534us; ProgramCounter 123us; MemoryReads 2; MemoryAt (65534, 0x12uy); MemoryAt (65535, 0x34uy); InstructionRegisterAt (0, 2)]
         
     [<TestMethod>]
     member this.``Cesar: RTS returns from subroutine``() =
         this.``Cesar: JSR jumps to subroutine``()
         cpu.Memory.Data.[123] <- byte Instruction.Rts ||| byte Register.R3
         Step cpu
-        assertCesarState [R1 123us; R3 0x1234us; R6 0us; ProgramCounter 2us; MemoryReads 5; MemoryWrites 2]
+        assertCesarState [R1 123us; R3 0x1234us; R6 0us; ProgramCounter 2us; MemoryReads 5; MemoryWrites 2; InstructionRegisterAt (123, 1)]
 
     [<TestMethod>]
     member this.``Cesar: CLR group instructions works as expected``() =
@@ -483,17 +473,18 @@ type CesarTests() =
     member this.``Cesar: HLT sets Halted flag``() =
         cpu.Memory.Data.[1] <- byte Instruction.Hlt
         Step cpu
-        assertCesarState [FlagsHalted false]
+        assertCesarState [FlagsHalted false; InstructionRegisterAt (0, 1)]
         Step cpu
-        assertCesarState [FlagsHalted true]
+        assertCesarState [FlagsHalted true; InstructionRegisterAt (1, 1)]
         Step cpu
-        assertCesarState [FlagsHalted false]
+        assertCesarState [FlagsHalted false; InstructionRegisterAt (2, 1)]
 
     [<TestMethod>]
-    member this.``Cesar: Display memory area addresses works at byte level``() =
-        // Reads from memory area
+    member this.``Cesar: High memory area addresses works at byte level``() =
         cpu.Memory.Data.[0] <- 48uy    // BR 8 
         cpu.Memory.Data.[1] <- 8uy
+        cpu.Memory.Data.[65497] <- 0x33uy
+        cpu.Memory.Data.[65498] <- 0x66uy
         cpu.Memory.Data.[65499] <- 123uy
         cpu.Memory.Data.[65500] <- 234uy
         cpu.Memory.Data.[65535] <- 100uy
@@ -506,6 +497,7 @@ type CesarTests() =
         Step cpu
         assertCesarState [R0 12296us]
 
+        // Display memory area
         cpu.Memory.Data.[14] <- 155uy  // MOV 65534, R1
         cpu.Memory.Data.[15] <- 193uy
         cpu.Memory.Data.[16] <- 255uy
@@ -527,12 +519,28 @@ type CesarTests() =
         Step cpu
         assertCesarState [R3 234us]
 
+        // Keyboard memory area
         cpu.Memory.Data.[26] <- 155uy  // MOV 65499, R4
         cpu.Memory.Data.[27] <- 196uy
         cpu.Memory.Data.[28] <- 255uy
         cpu.Memory.Data.[29] <- 219uy
         Step cpu
-        assertCesarState [R4 123us]         // ??
+        assertCesarState [R4 123us]
+
+        cpu.Memory.Data.[30] <- 155uy  // MOV 65498, R4
+        cpu.Memory.Data.[31] <- 196uy
+        cpu.Memory.Data.[32] <- 255uy
+        cpu.Memory.Data.[33] <- 218uy
+        Step cpu
+        assertCesarState [R4 0x66us]
+
+        // Normal memory area
+        cpu.Memory.Data.[34] <- 155uy  // MOV 65497, R4
+        cpu.Memory.Data.[35] <- 196uy
+        cpu.Memory.Data.[36] <- 255uy
+        cpu.Memory.Data.[37] <- 217uy
+        Step cpu
+        assertCesarState [R4 0x3366us]
 
     [<TestMethod>]
     member this.``Cesar: DisassembleInstruction works as expected``() =

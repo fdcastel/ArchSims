@@ -69,8 +69,7 @@ type RamsesAssemblersTests() =
                                 66uy|]
 
         AssembleProgram base.Cpu program
-        let memoryArea = Array.sub base.Cpu.Memory.Data 0 15
-        Array.compareWith (fun a b -> if a = b then 0 else 1) expectedProgram memoryArea |>== 0
+        expectedProgram |> equalsArr (Array.sub base.Cpu.Memory.Data 0 15)
 
         Step base.Cpu
         Step base.Cpu

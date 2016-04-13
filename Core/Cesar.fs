@@ -84,7 +84,8 @@ module Cesar =
     let AddressModeMask    = 0b00111000uy
     let RegisterMask       = 0b00000111uy
 
-    let DisplayMemoryAddress = 0xFFDAus // Start of display memory mapped area 
+    let KeyboardMemoryAddress = 0xFFDAus // Start of keyboard memory mapped area
+    let DisplayMemoryAddress  = 0xFFDCus // Start of display memory mapped area
 
     type Flag =
     | Negative = 0b00001000uy
@@ -175,7 +176,7 @@ module Cesar =
             _ir.Data <- Array.append _ir.Data [|value|]
             
         let appendWordToInstructionRegister (value:uint16) =
-            _ir.Data <- Array.append _ir.Data [|byte value >>> 8; byte value|]
+            _ir.Data <- Array.append _ir.Data [|byte (value >>> 8); byte value|]
 
         let readRegisterAndInc register = 
             let result = _r.[int register]
@@ -202,7 +203,10 @@ module Cesar =
                 Reg register
 
             | AddressMode.RegPostInc ->
-                Addr (readRegisterAndInc register)
+                let address = readRegisterAndInc register
+                if register = Register.R7 then
+                    appendWordToInstructionRegister address
+                Addr address
 
             | AddressMode.RegPreDec ->
                 Addr (decRegisterAndRead register)
@@ -216,7 +220,10 @@ module Cesar =
                 Addr _r.[int register]
 
             | AddressMode.RegPostIncIndirect ->
-                Addr (readWordAndInc register)
+                let address = readWordAndInc register
+                if register = Register.R7 then
+                    appendWordToInstructionRegister address
+                Addr address
 
             | AddressMode.RegPreDecIndirect ->
                 Addr (decAndReadWord register)
@@ -291,7 +298,7 @@ module Cesar =
             match operand with
             | Reg register -> _r.[int register]
             | Addr address -> 
-                if address >= DisplayMemoryAddress then     // In display memory area: consider only 8-bits operands 
+                if address >= KeyboardMemoryAddress then     // In 8-bit memory area?
                     MemoryReadByte cpu.Memory (int address) |> uint16
                 else
                     MemoryReadWordBigEndian cpu.Memory (int address)
@@ -301,7 +308,7 @@ module Cesar =
             match operand with
             | Reg register -> _r.[int register] <- value
             | Addr address -> 
-                if address >= DisplayMemoryAddress then     // In display memory area: consider only 8-bits operands 
+                if address >= KeyboardMemoryAddress then     // In 8-bit memory area?
                     byte value |> MemoryWriteByte cpu.Memory (int address)
                 else
                     value |> MemoryWriteWordBigEndian cpu.Memory (int address)

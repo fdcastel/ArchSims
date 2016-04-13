@@ -134,11 +134,8 @@ type CesarAssemblerTests() =
         let expectedData = [|0uy;123uy;4uy;210uy|]
 
         AssembleProgram base.Cpu program
-        let programArea = Array.sub base.Cpu.Memory.Data 0 45
-        Array.compareWith (fun a b -> if a = b then 0 else 1) expectedProgram programArea |>== 0
-
-        let dataArea = Array.sub base.Cpu.Memory.Data 1000 4
-        Array.compareWith (fun a b -> if a = b then 0 else 1) expectedData dataArea |>== 0
+        expectedProgram |> equalsArr (Array.sub base.Cpu.Memory.Data 0 45)
+        expectedData |> equalsArr (Array.sub base.Cpu.Memory.Data 1000 4)
 
         Step base.Cpu
         Step base.Cpu
