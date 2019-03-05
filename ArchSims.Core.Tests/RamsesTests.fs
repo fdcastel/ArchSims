@@ -1,15 +1,13 @@
-﻿namespace Ufrgs.Inf.ArchSims.Emulators.Tests.RamsesEmulator
+﻿namespace Ufrgs.Inf.ArchSims.Core.Tests.Ramses
 
-open System
-
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Ramses
-open Ufrgs.Inf.ArchSims.Core.Tests.Utils
-open Ufrgs.Inf.ArchSims.Emulators.RamsesEmulator
 
-type RamsesEmulatorState =
+open Ufrgs.Inf.ArchSims.Core.Tests.Utils
+
+type RamsesState =
     | Ra of byte
     | Rb of byte
     | Rx of byte
@@ -23,34 +21,9 @@ type RamsesEmulatorState =
     | MemoryAt of int * byte
     | None
 
-[<TestClass>]
-type RamsesEmulatorTests() = 
-    let cpu = CreateCpu()
-
-    let getDisplayByte address =
-        let str = [|char cpu.Host.Memory.Data.[address]; char cpu.Host.Memory.Data.[address + 1]|] |> System.String
-        Convert.ToByte(str, 16)
-
-    let assertEmulatorOutputIsConsistent() =
-        byte cpu.Host.Registers.R.[0] |>== cpu.Registers.Ra
-        byte cpu.Host.Registers.R.[1] |>== cpu.Registers.Rb
-        byte cpu.Host.Registers.R.[2] |>== cpu.Registers.Rx
-        byte cpu.Host.Registers.R.[3] |>== cpu.Registers.ProgramCounter
-        cpu.Host.Registers.R.[4] |>== 0us
-        cpu.Host.Registers.R.[5] |>== 0us
-        cpu.Host.Registers.R.[6] |>== 10000us
-        cpu.Host.Registers.Flags.Negative |>== cpu.Registers.Flags.Negative
-        cpu.Host.Registers.Flags.Zero |>== cpu.Registers.Flags.Zero
-        cpu.Host.Registers.Flags.Carry |>== cpu.Registers.Flags.Carry
-
-        getDisplayByte 0xFFE0 |>== cpu.Registers.Ra
-        getDisplayByte 0xFFE8 |>== cpu.Registers.Rb
-        getDisplayByte 0xFFF0 |>== cpu.Registers.Rx
-        getDisplayByte 0xFFF8 |>== cpu.Registers.ProgramCounter
-        cpu.Host.Memory.Data.[0xFFFC] |>== if cpu.Registers.Flags.Halted   then byte 'H' else 0uy
-        cpu.Host.Memory.Data.[0xFFFD] |>== if cpu.Registers.Flags.Negative then byte 'N' else 0uy
-        cpu.Host.Memory.Data.[0xFFFE] |>== if cpu.Registers.Flags.Zero     then byte 'Z' else 0uy
-        cpu.Host.Memory.Data.[0xFFFF] |>== if cpu.Registers.Flags.Carry    then byte 'C' else 0uy
+[<TestFixture>]
+type RamsesTests() = 
+    let mutable cpu = CreateCpu()
 
     let assertRamsesState states =
         for state in states do
@@ -59,23 +32,21 @@ type RamsesEmulatorTests() =
             | Rb rb -> cpu.Registers.Rb |>== rb
             | Rx rx -> cpu.Registers.Rx |>== rx
             | ProgramCounter pc -> cpu.Registers.ProgramCounter |>== pc
-            | MemoryReads reads -> () // Ignore
-            | MemoryWrites writes -> () // Ignore
+            | MemoryReads reads -> cpu.Memory.ReadCount |>== reads
+            | MemoryWrites writes -> cpu.Memory.WriteCount |>== writes
             | FlagsHalted h -> cpu.Registers.Flags.Halted |>== h
             | FlagsNegative n -> cpu.Registers.Flags.Negative |>== n
             | FlagsZero z -> cpu.Registers.Flags.Zero |>== z
             | FlagsCarry c -> cpu.Registers.Flags.Carry |>== c
             | MemoryAt (addr, v) -> cpu.Memory.Data.[addr] |>== v
             | None -> ()
-        assertEmulatorOutputIsConsistent()
 
     let assertCpuStateIsClean() =
         assertRamsesState [ProgramCounter 0uy; Ra 0uy; Rb 0uy; Rx 0uy; 
             FlagsHalted false; FlagsNegative false; FlagsZero true; FlagsCarry false; 
             MemoryReads 0; MemoryWrites 0]
-        cpu.Registers.InstructionRegister.OpCode |>== 0uy
-        cpu.Registers.InstructionRegister.OperandAddress |>== 0uy
-        cpu.Memory.Data.[0..255] |> Array.iter (equals 0uy) 
+        cpu.Registers.InstructionRegister |>== { OpCode = 0uy; OperandAddress = 0uy }
+        cpu.Memory.Data |> Array.iter (equals 0uy) 
 
     let writeRegister register value =
         match register with
@@ -91,22 +62,28 @@ type RamsesEmulatorTests() =
         let expectedPc = if jumpExpected then 123uy else 2uy
         assertRamsesState [ProgramCounter expectedPc; MemoryReads 2]
 
-    [<TestInitialize>]
-    member this.Setup() =
-        Reset cpu
+    member this.Cpu
+        with get () = cpu
+        and set (value) = cpu <- value
         
-    [<TestMethod>]
-    member this.``RamsesEmulator: New Cpu starts in clean state``() =
+    member this.AssertRamsesState states = assertRamsesState states
+        
+    [<SetUp>]
+    member this.Setup() =
+        cpu <- CreateCpu()
+        
+    [<Test>]
+    member this.``Ramses: New Cpu starts in clean state``() =
         assertCpuStateIsClean()
         
-    [<TestMethod>]
-    member this.``RamsesEmulator: Program Counter wraps at end of memory``() =
+    [<Test>]
+    member this.``Ramses: Program Counter wraps at end of memory``() =
         cpu.Registers.ProgramCounter <- byte (cpu.Memory.Data.Length - 1)
         Step cpu
         assertRamsesState [ProgramCounter 0uy; MemoryReads 1]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: Reset() reverts to clean state``() =
+    [<Test>]
+    member this.``Ramses: Reset() reverts to clean state``() =
         cpu.Registers.Ra <- 1uy
         cpu.Registers.Rb <- 2uy
         cpu.Registers.Rx <- 3uy
@@ -118,8 +95,8 @@ type RamsesEmulatorTests() =
         Reset cpu
         assertCpuStateIsClean()
         
-    [<TestMethod>]
-    member this.``RamsesEmulator: Flags Zero and Negative are set when a register changes``() =
+    [<Test>]
+    member this.``Ramses: Flags Zero and Negative are set when a register changes``() =
         for r = 0 to 2 do
             cpu.Memory.Data.[0] <- byte Instruction.Not ||| (byte r <<< 2)
             cpu.Memory.Data.[1] <- byte Instruction.Not ||| (byte r <<< 2)
@@ -132,8 +109,8 @@ type RamsesEmulatorTests() =
                 Step cpu
                 assertRamsesState [FlagsNegative (i > 127); FlagsZero (i = 0)]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: AddressModes works as expected``() =
+    [<Test>]
+    member this.``Ramses: AddressModes works as expected``() =
         cpu.Memory.Data.[0] <- byte Instruction.Ldr ||| byte Register.Ra ||| byte AddressMode.Direct
         cpu.Memory.Data.[1] <- 123uy
         cpu.Memory.Data.[123] <- 234uy
@@ -162,14 +139,14 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra 234uy; Rx 23uy; ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: NOP does nothing``() =
+    [<Test>]
+    member this.``Ramses: NOP does nothing``() =
         cpu.Memory.Data.[0] <- byte Instruction.Nop
         Step cpu
         assertRamsesState [ProgramCounter 1uy; MemoryReads 1]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: LDR loads value from memory into any register``() =
+    [<Test>]
+    member this.``Ramses: LDR loads value from memory into any register``() =
         for r = 0 to 2 do
             Reset cpu
             cpu.Memory.Data.[0] <- byte Instruction.Ldr ||| (byte r <<< 2) ||| byte AddressMode.Immediate
@@ -178,8 +155,8 @@ type RamsesEmulatorTests() =
             let rCheck rr = if rr = r then 123uy else 0uy
             assertRamsesState [Ra (rCheck 0); Rb (rCheck 1); Rx (rCheck 2); ProgramCounter 2uy; MemoryReads 2]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: STA stores value from any register into memory``() =
+    [<Test>]
+    member this.``Ramses: STA stores value from any register into memory``() =
         for r = 0 to 2 do
             Reset cpu
             234uy |> writeRegister r
@@ -191,8 +168,8 @@ type RamsesEmulatorTests() =
             Step cpu
             assertRamsesState [ProgramCounter 2uy; MemoryReads 2; MemoryWrites 1; MemoryAt (122, 10uy); MemoryAt (123, 234uy); MemoryAt (124, 30uy)]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: ADD works as expected``() =
+    [<Test>]
+    member this.``Ramses: ADD works as expected``() =
         cpu.Registers.Ra <- 12uy
         cpu.Memory.Data.[0] <- byte Instruction.Add ||| byte AddressMode.Immediate
         cpu.Memory.Data.[1] <- 23uy
@@ -206,8 +183,8 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra (byte(256 - 12 - 23)); ProgramCounter 2uy; MemoryReads 2; FlagsNegative true; FlagsZero false; FlagsCarry true]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: OR works as expected``() =
+    [<Test>]
+    member this.``Ramses: OR works as expected``() =
         cpu.Registers.Ra <- 234uy
         cpu.Memory.Data.[0] <- byte Instruction.Or
         cpu.Memory.Data.[1] <- 123uy
@@ -215,8 +192,8 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra (234uy ||| 12uy); ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: AND works as expected``() =
+    [<Test>]
+    member this.``Ramses: AND works as expected``() =
         cpu.Registers.Ra <- 234uy
         cpu.Memory.Data.[0] <- byte Instruction.And
         cpu.Memory.Data.[1] <- 123uy
@@ -224,15 +201,15 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra (234uy &&& 12uy); ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: NOT works as expected``() =
+    [<Test>]
+    member this.``Ramses: NOT works as expected``() =
         cpu.Registers.Ra <- 85uy  (* 01010101 *)
         cpu.Memory.Data.[0] <- byte Instruction.Not
         Step cpu
         assertRamsesState [Ra 170uy (* 10101010 *); ProgramCounter 1uy; MemoryReads 1]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: SUB works as expected``() =
+    [<Test>]
+    member this.``Ramses: SUB works as expected``() =
         cpu.Registers.Ra <- 23uy
         cpu.Memory.Data.[0] <- byte Instruction.Sub ||| byte AddressMode.Immediate
         cpu.Memory.Data.[1] <- 12uy
@@ -246,12 +223,12 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra (byte(256 + 12 - 23)); ProgramCounter 2uy; MemoryReads 2; FlagsNegative true; FlagsZero false; FlagsCarry true]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: JMP changes Program Counter``() =
+    [<Test>]
+    member this.``Ramses: JMP changes Program Counter``() =
         testJumpOperation Instruction.Jmp true
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: JN jumps only if Negative flag is set``() =
+    [<Test>]
+    member this.``Ramses: JN jumps only if Negative flag is set``() =
         cpu.Registers.Flags.Negative <- false
         testJumpOperation Instruction.Jn false
 
@@ -259,8 +236,8 @@ type RamsesEmulatorTests() =
         cpu.Registers.Flags.Negative <- true
         testJumpOperation Instruction.Jn true
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: JZ jumps only if Zero flag is set``() =
+    [<Test>]
+    member this.``Ramses: JZ jumps only if Zero flag is set``() =
         cpu.Registers.Flags.Zero <- false
         testJumpOperation Instruction.Jz false
 
@@ -268,8 +245,8 @@ type RamsesEmulatorTests() =
         cpu.Registers.Flags.Zero <- true
         testJumpOperation Instruction.Jz true
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: JC jumps only if Carry flag is set``() =
+    [<Test>]
+    member this.``Ramses: JC jumps only if Carry flag is set``() =
         cpu.Registers.Flags.Carry <- false
         testJumpOperation Instruction.Jc false
 
@@ -277,8 +254,8 @@ type RamsesEmulatorTests() =
         cpu.Registers.Flags.Carry <- true
         testJumpOperation Instruction.Jc true
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: JSR jumps and saves Program Counter``() =
+    [<Test>]
+    member this.``Ramses: JSR jumps and saves Program Counter``() =
         cpu.Memory.Data.[0] <- byte Instruction.Jsr
         cpu.Memory.Data.[1] <- 123uy
 
@@ -288,8 +265,8 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [ProgramCounter 124uy; MemoryReads 2; MemoryWrites 1; MemoryAt (122, 10uy); MemoryAt (123, 2uy); MemoryAt (124, 30uy)]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: NEG works as expected``() =
+    [<Test>]
+    member this.``Ramses: NEG works as expected``() =
         cpu.Registers.Ra <- 23uy
         cpu.Memory.Data.[0] <- byte Instruction.Neg
         Step cpu
@@ -313,8 +290,8 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra (byte(256 - 0)); ProgramCounter 1uy; MemoryReads 1; FlagsNegative false; FlagsZero true; FlagsCarry true]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: SHR works as expected``() =
+    [<Test>]
+    member this.``Ramses: SHR works as expected``() =
         cpu.Registers.Ra <- 85uy (* 01010101 *)
         cpu.Memory.Data.[0] <- byte Instruction.Shr
         Step cpu
@@ -328,8 +305,8 @@ type RamsesEmulatorTests() =
         Step cpu
         assertRamsesState [Ra 10uy; ProgramCounter 3uy; MemoryReads 3; FlagsNegative false; FlagsZero false; FlagsCarry true]
 
-    [<TestMethod>]
-    member this.``RamsesEmulator: HLT sets Halted flag``() =
+    [<Test>]
+    member this.``Ramses: HLT sets Halted flag``() =
         cpu.Memory.Data.[1] <- byte Instruction.Hlt
         Step cpu
         assertRamsesState [FlagsHalted false]
@@ -337,3 +314,40 @@ type RamsesEmulatorTests() =
         assertRamsesState [FlagsHalted true]
         Step cpu
         assertRamsesState [FlagsHalted false]
+
+    [<Test>]
+    member this.``Ramses: DisassembleInstruction works as expected``() =
+        DisassembleInstruction [byte Instruction.Nop] |>== ("NOP", 1)
+        DisassembleInstruction [byte Instruction.Nop + 5uy] |>== ("NOP", 1)
+        DisassembleInstruction [byte Instruction.Hlt] |>== ("HLT", 1)
+
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy] |>== ("STR A 12", 2)
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Rb ||| byte AddressMode.Indirect; 23uy] |>== ("STR B 23,I", 2)
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Rx ||| byte AddressMode.Immediate; 34uy] |>== ("STR X #34", 2)
+        DisassembleInstruction [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Indexed; 45uy] |>== ("STR A 45,X", 2)
+
+        DisassembleInstruction [byte Instruction.Not ||| byte Register.Ra] |>== ("NOT A", 1)
+        DisassembleInstruction [byte Instruction.Not ||| byte Register.Rb] |>== ("NOT B", 1)
+        DisassembleInstruction [byte Instruction.Not ||| byte Register.Rx] |>== ("NOT X", 1)
+
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Direct; 12uy] |>== ("JMP 12", 2)
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy] |>== ("JMP 23,I", 2)
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Immediate; 34uy] |>== ("JMP #34", 2)
+        DisassembleInstruction [byte Instruction.Jmp ||| byte AddressMode.Indexed; 45uy] |>== ("JMP 45,X", 2)
+
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 0uy] |>== ("LDR X #0", 2)
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 127uy] |>== ("LDR X #127", 2)
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy] |>== ("LDR X #128", 2)
+        DisassembleInstruction [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy] |>== ("LDR X #255", 2)
+
+    [<Test>]
+    member this.``Ramses: DisassembleInstructions works as expected``() =
+
+        let content = [byte Instruction.Str ||| byte Register.Ra ||| byte AddressMode.Direct; 12uy] @
+                      [byte Instruction.Not ||| byte Register.Rb] @
+                      [byte Instruction.Nop] @
+                      [byte Instruction.Jmp ||| byte AddressMode.Indirect; 23uy] @
+                      [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy] @
+                      [byte Instruction.Hlt]
+
+        DisassembleInstructions content |>== [("STR A 12", 2); ("NOT B", 1); ("NOP", 1); ("JMP 23,I", 2); ("LDR X #255", 2); ("HLT", 1)]

@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core.Tests
 
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 module Utils = 
     let equals expected actual = Assert.AreEqual(expected, actual)

@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Assemblers.Tests.Ramses
 
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Ramses
@@ -9,11 +9,11 @@ open Ufrgs.Inf.ArchSims.Assemblers.Ramses.RamsesAssembler
 open Ufrgs.Inf.ArchSims.Core.Tests.Ramses
 open Ufrgs.Inf.ArchSims.Core.Tests.Utils
 
-[<TestClass>]
+[<TestFixture>]
 type RamsesAssemblersTests() = 
     inherit RamsesTests()
 
-    [<TestMethod>]
+    [<Test>]
     member this.``RamsesAssembler: AssembleInstruction works as expected``() =
         AssembleInstruction "NOP" |>== [byte Instruction.Nop]
         AssembleInstruction "HLT" |>== [byte Instruction.Hlt]
@@ -37,7 +37,7 @@ type RamsesAssemblersTests() =
         AssembleInstruction "LDR X #128" |>== [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 128uy]
         AssembleInstruction "LDR X #255" |>== [byte Instruction.Ldr ||| byte Register.Rx ||| byte AddressMode.Immediate; 255uy]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``RamsesAssembler: AssembleProgram works as expected``() =
         let program = """
             LDR A 10
@@ -77,7 +77,11 @@ type RamsesAssemblersTests() =
         Step base.Cpu
         this.AssertRamsesState [Ra 123uy; Rb 14uy; Rx 66uy; ProgramCounter 7uy; FlagsHalted true]
 
-    [<TestMethod>]
-    [<ExpectedException(typeof<System.Exception>, "Label indefinido: L1")>]
+    [<Test>]
     member this.``RamsesAssembler: AssembleProgram fails with undeclared label``() =
-        AssembleProgram base.Cpu "LDR A :L1"
+        let test() = 
+            AssembleProgram this.Cpu "LDR A :L1"
+        Assert.That(test, 
+            Throws.TypeOf<System.Exception>()
+                .With.Message.EqualTo("Label indefinido: L1"));
+

@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core.Tests
 
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 open Ufrgs.Inf.ArchSims.Core.Debugger
 open Ufrgs.Inf.ArchSims.Core.Memory
@@ -13,7 +13,7 @@ type DebuggerState =
     | DebuggerLastStop of DebuggerStopReason
     | None
 
-[<TestClass>]
+[<TestFixture>]
 type DebuggerTests() = 
     let cpu = CreateCpu()
     let debugger = CreateDebugger (fun () -> int cpu.Registers.ProgramCounter)
@@ -27,18 +27,19 @@ type DebuggerTests() =
             | DebuggerLastStop reason -> debugger.LastStop |>== reason
             | None -> ()
 
-    [<TestInitialize>]
+    [<SetUp>]
     member this.Setup() =
+        Reset cpu
         DebuggerReset debugger
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Debugger: DebuggerRun detects when running forever``() =
         DebuggerRun debugger 1000
         assertDebuggerState [DebuggerLastStop RunningForever; Instructions 1000]
         DebuggerRun debugger 500
         assertDebuggerState [DebuggerLastStop RunningForever; Instructions 1500]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Debugger: DebuggerReset reverts to clean state``() =
         cpu.Memory.Data.[0] <- byte Instruction.Hlt
         DebuggerSetBreakpoint debugger 10
@@ -49,7 +50,7 @@ type DebuggerTests() =
         for i = 0 to cpu.Memory.Data.Length - 1 do
             Assert.IsFalse(debugger.Breakpoints.Contains(i))
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Debugger: Debugger.LastStop works as expected``() =
         DebuggerStep debugger
         assertDebuggerState [DebuggerLastStop DebuggerStopReason.None]
@@ -80,7 +81,7 @@ type DebuggerTests() =
         DebuggerRun debugger 1000
         assertDebuggerState [DebuggerLastStop DebuggerStopReason.Halted; Instructions 124]
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Debugger: Breakpoints halts execution``() =
         DebuggerSetBreakpoint debugger 12
         DebuggerSetBreakpoint debugger 50

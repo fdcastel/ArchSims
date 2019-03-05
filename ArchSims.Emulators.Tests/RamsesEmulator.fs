@@ -29,7 +29,7 @@ module RamsesEmulator =
 
     let emulatorSource =
         let assembly = Assembly.GetExecutingAssembly();
-        let resourceName = "RamsesEmulator.Cesar.txt";
+        let resourceName = "ArchSims.Emulators.Tests.RamsesEmulator.Cesar.txt";
         use stream = assembly.GetManifestResourceStream(resourceName)
         use reader = new StreamReader(stream)
         reader.ReadToEnd()

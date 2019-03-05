@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core.Tests.Neander
 
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Neander
@@ -18,7 +18,7 @@ type NeanderState =
     | MemoryAt of int * byte
     | None
 
-[<TestClass>]
+[<TestFixture>]
 type NeanderTests() = 
     let mutable cpu = CreateCpu()
 
@@ -49,21 +49,21 @@ type NeanderTests() =
         let expectedPc = if jumpExpected then 123uy else 2uy
         assertNeanderState [ProgramCounter expectedPc; MemoryReads 2]
 
-    [<TestInitialize>]
+    [<SetUp>]
     member this.Setup() =
         cpu <- CreateCpu()
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: New Cpu starts in clean state``() =
         assertCpuStateIsClean()
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: Program Counter wraps at end of memory``() =
         cpu.Registers.ProgramCounter <- byte (cpu.Memory.Data.Length - 1)
         Step cpu
         assertNeanderState [ProgramCounter 0uy; MemoryReads 1]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: Reset reverts to clean state``() =
         cpu.Registers.Accumulator <- 1uy
         cpu.Registers.ProgramCounter <- 1uy
@@ -74,7 +74,7 @@ type NeanderTests() =
         Reset cpu
         assertCpuStateIsClean()
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: Flags Zero and Negative are set when Accumulator changes``() =
         cpu.Memory.Data.[0] <- byte Instruction.Not
         cpu.Memory.Data.[1] <- byte Instruction.Not
@@ -87,13 +87,13 @@ type NeanderTests() =
             Step cpu
             assertNeanderState [FlagsNegative (i > 127); FlagsZero (i = 0)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: NOP does nothing``() =
         cpu.Memory.Data.[0] <- byte Instruction.Nop
         Step cpu
         assertNeanderState [ProgramCounter 1uy; MemoryReads 1]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: LDA loads value from memory into Accumulator``() =
         cpu.Memory.Data.[0] <- byte Instruction.Lda
         cpu.Memory.Data.[1] <- 123uy
@@ -101,7 +101,7 @@ type NeanderTests() =
         Step cpu
         assertNeanderState [Accumulator 234uy; ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: STA stores value from Accumulator into memory``() =
         cpu.Registers.Accumulator <- 234uy
         cpu.Memory.Data.[0] <- byte Instruction.Sta
@@ -109,7 +109,7 @@ type NeanderTests() =
         Step cpu
         assertNeanderState [Accumulator 234uy; ProgramCounter 2uy; MemoryReads 2; MemoryWrites 1; MemoryAt (123, 234uy)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: ADD works as expected``() =
         cpu.Registers.Accumulator <- 12uy
         cpu.Memory.Data.[0] <- byte Instruction.Add
@@ -118,7 +118,7 @@ type NeanderTests() =
         Step cpu
         assertNeanderState [Accumulator (12uy + 23uy); ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: OR works as expected``() =
         cpu.Registers.Accumulator <- 234uy
         cpu.Memory.Data.[0] <- byte Instruction.Or
@@ -127,7 +127,7 @@ type NeanderTests() =
         Step cpu
         assertNeanderState [Accumulator (234uy ||| 12uy); ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: AND works as expected``() =
         cpu.Registers.Accumulator <- 234uy
         cpu.Memory.Data.[0] <- byte Instruction.And
@@ -136,18 +136,18 @@ type NeanderTests() =
         Step cpu
         assertNeanderState [Accumulator (234uy &&& 12uy); ProgramCounter 2uy; MemoryReads 3]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: NOT works as expected``() =
         cpu.Registers.Accumulator <- 85uy  (* 01010101 *)
         cpu.Memory.Data.[0] <- byte Instruction.Not
         Step cpu
         assertNeanderState [Accumulator 170uy (* 10101010 *); ProgramCounter 1uy; MemoryReads 1]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: JMP changes Program Counter``() =
         testJumpOperation Instruction.Jmp true
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: JN jumps only if Negative flag is set``() =
         cpu.Registers.Flags.Negative <- false
         testJumpOperation Instruction.Jn false
@@ -156,7 +156,7 @@ type NeanderTests() =
         cpu.Registers.Flags.Negative <- true
         testJumpOperation Instruction.Jn true
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: JZ jumps only if Zero flag is set``() =
         cpu.Registers.Flags.Zero <- false
         testJumpOperation Instruction.Jz false
@@ -165,7 +165,7 @@ type NeanderTests() =
         cpu.Registers.Flags.Zero <- true
         testJumpOperation Instruction.Jz true
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Neander: HLT sets Halted flag``() =
         cpu.Memory.Data.[1] <- byte Instruction.Hlt
         Step cpu

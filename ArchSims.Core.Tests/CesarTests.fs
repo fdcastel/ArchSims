@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Core.Tests.Cesar
 
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Cesar
@@ -28,7 +28,7 @@ type CesarState =
     | InstructionRegisterIs of byte list
     | None
 
-[<TestClass>]
+[<TestFixture>]
 type CesarTests() = 
     let mutable cpu = CreateCpu()
 
@@ -179,21 +179,21 @@ type CesarTests() =
 
     member this.AssertCesarState states = assertCesarState states
         
-    [<TestInitialize>]
+    [<SetUp>]
     member this.Setup() =
         cpu <- CreateCpu()
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: New Cpu starts in clean state``() =
         assertCpuStateIsClean()
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: Program Counter wraps at end of memory``() =
         cpu.Registers.R.[7] <- uint16 (cpu.Memory.Data.Length - 1)
         Step cpu
         assertCesarState [ProgramCounter 0us; MemoryReads 1]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: Reset() reverts to clean state``() =
         cpu.Registers.R.[0] <- 1us
         cpu.Registers.R.[1] <- 2us
@@ -206,7 +206,7 @@ type CesarTests() =
         Reset cpu
         assertCpuStateIsClean()
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: AddressModes works as expected``() =
         testAddressMode(AddressMode.Register)
         testAddressMode(AddressMode.RegPostInc)
@@ -217,7 +217,7 @@ type CesarTests() =
         testAddressMode(AddressMode.RegPreDecIndirect)
         testAddressMode(AddressMode.IndexedIndirect)
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: AddressModes with R7 works as expected``() =
         cpu.Memory.Data.[0] <- byte Instruction.Not
         cpu.Memory.Data.[1] <- byte Register.R7 ||| byte AddressMode.Register
@@ -281,13 +281,13 @@ type CesarTests() =
         Step cpu
         assertCesarState [ProgramCounter 30us; MemoryReads 8; MemoryWrites 2; MemoryAt (0, 255uy); MemoryAt (1, 255uy); InstructionRegisterAt (26, 4)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: NOP does nothing``() =
         cpu.Memory.Data.[0] <- byte Instruction.Nop
         Step cpu
         assertCesarState [ProgramCounter 1us; MemoryReads 1; InstructionRegisterAt (0, 1)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: CCC clears flags``() =
         for flags = 0 to 15 do
             cpu.Registers.R.[7] <- 0us
@@ -310,7 +310,7 @@ type CesarTests() =
                               FlagsCarry (not mustClearCarry); 
                               InstructionRegisterAt (0, 1)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: SCC sets flags``() =
         for flags = 0 to 15 do
             cpu.Registers.R.[7] <- 0us
@@ -333,7 +333,7 @@ type CesarTests() =
                               FlagsCarry mustSetCarry;
                               InstructionRegisterAt (0, 1)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: Branches instructions works as expected``() =
         testBranchOperation Instruction.Br true []
 
@@ -359,7 +359,7 @@ type CesarTests() =
             testBranchOperation Instruction.Bhi (not cpu.Registers.Flags.Carry && not cpu.Registers.Flags.Zero) []
             testBranchOperation Instruction.Bls (cpu.Registers.Flags.Carry || cpu.Registers.Flags.Zero) []
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: JMP changes Program Counter``() =
         cpu.Memory.Data.[0] <- byte Instruction.Jmp
         cpu.Memory.Data.[1] <- byte AddressMode.RegisterIndirect ||| byte Register.R1
@@ -383,7 +383,7 @@ type CesarTests() =
         Step cpu
         assertCesarState [ProgramCounter 2us; MemoryReads 2; InstructionRegisterIs [64uy; 15uy; 0uy; 2uy]]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: SOB subtracts one and branch``() =
         cpu.Memory.Data.[10] <- byte Instruction.Sob ||| byte Register.R2
         cpu.Memory.Data.[11] <- 2uy
@@ -397,7 +397,7 @@ type CesarTests() =
         Step cpu
         assertCesarState [R2 0us; ProgramCounter 12us; MemoryReads 6; InstructionRegisterAt (10, 2)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: JSR jumps to subroutine``() =
         cpu.Memory.Data.[0] <- byte Instruction.Jsr ||| byte Register.R3
         cpu.Memory.Data.[1] <- Indirect ||| byte Register.R1
@@ -406,14 +406,14 @@ type CesarTests() =
         Step cpu
         assertCesarState [R1 123us; R3 2us; R6 65534us; ProgramCounter 123us; MemoryReads 2; MemoryAt (65534, 0x12uy); MemoryAt (65535, 0x34uy); InstructionRegisterAt (0, 2)]
         
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: RTS returns from subroutine``() =
         this.``Cesar: JSR jumps to subroutine``()
         cpu.Memory.Data.[123] <- byte Instruction.Rts ||| byte Register.R3
         Step cpu
         assertCesarState [R1 123us; R3 0x1234us; R6 0us; ProgramCounter 2us; MemoryReads 5; MemoryWrites 2; InstructionRegisterAt (123, 1)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: CLR group instructions works as expected``() =
         let testValues = [| 1us; 127us; 128us; 129us; 255us; 256us; 257us; 32767us; 32768us; 32769us; 65534us; 65535us |]
         for value in testValues do
@@ -443,33 +443,33 @@ type CesarTests() =
             cpu.Registers.Flags.Carry <- true
             testClrGroupOperation Instruction.Sbc value (value - 1us) [FlagsOverflow (value = 32768us); FlagsCarry (value <> 0us)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: ADD adds source into target``() =
         testMovGroupOperation Instruction.Add 12us 23us (12us + 23us) [FlagsNegative false; FlagsCarry false]
         Reset cpu
         testMovGroupOperation Instruction.Add (uint16(65536 - 12)) (uint16(65536 - 23)) (uint16(65536 - 12 - 23)) [FlagsNegative true; FlagsCarry true]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: SUB subtracts source from target``() =
         testMovGroupOperation Instruction.Sub 12us 23us (23us - 12us) [FlagsNegative false; FlagsCarry false]
         Reset cpu
         testMovGroupOperation Instruction.Sub 23us 12us (uint16(65536 + 12 - 23)) [FlagsNegative true; FlagsCarry true]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: CMP compares two operands``() =
         testMovGroupOperation Instruction.Sub 12us 23us (23us - 12us) [FlagsNegative false; FlagsZero false; FlagsCarry false]
         Reset cpu
         testMovGroupOperation Instruction.Sub 23us 12us (uint16(65536 + 12 - 23)) [FlagsNegative true; FlagsZero false; FlagsCarry true]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: AND works as expected``() =
         testMovGroupOperation Instruction.And 12us 234us (12us &&& 234us) [FlagsNegative false; FlagsCarry false]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: OR works as expected``() =
         testMovGroupOperation Instruction.Or 12us 234us (12us ||| 234us) [FlagsNegative false; FlagsCarry false]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: HLT sets Halted flag``() =
         cpu.Memory.Data.[1] <- byte Instruction.Hlt
         Step cpu
@@ -479,7 +479,7 @@ type CesarTests() =
         Step cpu
         assertCesarState [FlagsHalted false; InstructionRegisterAt (2, 1)]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: High memory area addresses works at byte level``() =
         cpu.Memory.Data.[0] <- 48uy    // BR 8 
         cpu.Memory.Data.[1] <- 8uy
@@ -542,7 +542,7 @@ type CesarTests() =
         Step cpu
         assertCesarState [R4 0x3366us]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: DisassembleInstruction works as expected``() =
         DisassembleInstruction [byte Instruction.Nop] |>== ("NOP", 1)
         DisassembleInstruction [byte Instruction.Nop + 5uy] |>== ("NOP", 1)
@@ -607,7 +607,7 @@ type CesarTests() =
         let k = EncodeInstructionTwoOperand Instruction.Mov AddressMode.RegPreDecIndirect Register.R1 AddressMode.IndexedIndirect Register.R2
         DisassembleInstruction [byte (k >>> 8); byte k; 0uy; 20uy] |>== ("MOV (-(R1)), (20(R2))", 4)
 
-    [<TestMethod>]
+    [<Test>]
     member this.``Cesar: DisassembleInstructions works as expected``() =
 
         let j = EncodeInstructionTwoOperand Instruction.Mov AddressMode.IndexedIndirect Register.R1 AddressMode.IndexedIndirect Register.R2

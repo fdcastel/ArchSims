@@ -1,6 +1,6 @@
 ﻿namespace Ufrgs.Inf.ArchSims.Assemblers.Tests.Cesar
 
-open Microsoft.VisualStudio.TestTools.UnitTesting
+open NUnit.Framework
 
 open Ufrgs.Inf.ArchSims.Core.Memory
 open Ufrgs.Inf.ArchSims.Core.Cesar
@@ -9,11 +9,11 @@ open Ufrgs.Inf.ArchSims.Assemblers.Cesar.CesarAssembler
 open Ufrgs.Inf.ArchSims.Core.Tests.Cesar
 open Ufrgs.Inf.ArchSims.Core.Tests.Utils
 
-[<TestClass>]
+[<TestFixture>]
 type CesarAssemblerTests() = 
     inherit CesarTests()
 
-    [<TestMethod>]
+    [<Test>]
     member this.``CesarAssembler: AssembleInstruction works as expected``() =
         AssembleInstruction "NOP" |>== [byte Instruction.Nop]
         AssembleInstruction "HLT" |>== [byte Instruction.Hlt]
@@ -84,7 +84,7 @@ type CesarAssemblerTests() =
         AssembleInstruction "MOV #65535, R1" |>== [147uy; 193uy; 255uy; 255uy]
         AssembleInstruction "MOV #-1, R1" |>== [147uy; 193uy; 255uy; 255uy]
 
-    [<TestMethod>]
+    [<Test>]
     member this.``CesarAssembler: AssembleProgram works as expected``() =
         let program = """
             MOV #10, R1
@@ -145,17 +145,23 @@ type CesarAssemblerTests() =
         Step base.Cpu
         this.AssertCesarState [R1 10us; R2 123us; R3 61440us; R4 1234us; R5 1234us; ProgramCounter 21us; FlagsHalted true]
 
-    [<TestMethod>]
-    [<ExpectedException(typeof<System.Exception>, "Label indefinido: L1")>]
+    [<Test>]
     member this.``CesarAssembler: AssembleProgram fails with undeclared label``() =
-        AssembleProgram base.Cpu "JMP :L1"
+        let test() = 
+            AssembleProgram this.Cpu "JMP :L1"
+        Assert.That(test, 
+            Throws.TypeOf<System.Exception>()
+                .With.Message.EqualTo("Label indefinido: L1"));
 
-    [<TestMethod>]
-    [<ExpectedException(typeof<System.Exception>, "Label inacessível a partir de um branch: L1")>]
+    [<Test>]
     member this.``CesarAssembler: AssembleProgram fails with far branches``() =
-        AssembleProgram base.Cpu """
-            BR :L1
-        @1000
-        :L1
-            HLT
-        """
+        let test() = 
+            AssembleProgram this.Cpu """
+                BR :L1
+            @1000
+            :L1
+                HLT
+            """
+        Assert.That(test, 
+            Throws.TypeOf<System.Exception>()
+                .With.Message.EqualTo("Label inacessível a partir de um branch: L1"));
