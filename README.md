@@ -23,7 +23,7 @@ This repository contains:
 
 ## Prerequisites
 
-  - .NET Core 2.0
+  - .NET 9
 
 ## To run the tests
 
