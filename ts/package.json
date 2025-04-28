@@ -1,0 +1,8 @@
+{
+  "name": "archsims-ts-workspace",
+  "private": true,
+  "workspaces": [
+    "archsims-core",
+    "archsims-ui"
+  ]
+}

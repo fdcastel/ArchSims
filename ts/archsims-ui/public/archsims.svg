@@ -1,0 +1,51 @@
+<svg width="256" height="128" viewBox="0 0 256 128" xmlns="http://www.w3.org/2000/svg" fill="none" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <!-- Glow filters -->
+    <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#2ECC40" flood-opacity="0.7"/>
+    </filter>
+    <filter id="glowYellow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FFDC00" flood-opacity="0.7"/>
+    </filter>
+    <filter id="glowRed" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FF4136" flood-opacity="0.7"/>
+    </filter>
+
+    <!-- Toggle shadow -->
+    <filter id="toggleShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Outer frame -->
+  <rect width="256" height="128" rx="12" fill="#2D2D2D"/>
+
+  <!-- Inner panel -->
+  <rect x="12" y="16" width="232" height="96" rx="8" fill="#444"/>
+
+  <!-- Lights row -->
+  <g>
+    <circle cx="36"   cy="40" r="6" fill="#2ECC40" filter="url(#glowGreen)"/> <!-- Green -->
+    <circle cx="72.8" cy="40" r="6" fill="#FFDC00" filter="url(#glowYellow)"/> <!-- Yellow -->
+    <circle cx="109.6" cy="40" r="6" fill="#FF4136" filter="url(#glowRed)"/> <!-- Red -->
+    <circle cx="146.4" cy="40" r="6" fill="#2ECC40" filter="url(#glowGreen)"/> <!-- Green -->
+    <circle cx="183.2" cy="40" r="6" fill="#FFDC00" filter="url(#glowYellow)"/> <!-- Yellow -->
+    <circle cx="220"   cy="40" r="6" fill="#FF4136" filter="url(#glowRed)"/> <!-- Red -->
+  </g>
+
+  <!-- Toggle switches row -->
+  <g stroke="#AAAAAA" stroke-width="4" stroke-linecap="round" filter="url(#toggleShadow)">
+    <!-- More tilted left (up) -->
+    <line x1="36"   y1="70" x2="30"   y2="90"/>
+    <line x1="72.8" y1="70" x2="66.8" y2="90"/>
+    <line x1="109.6" y1="70" x2="103.6" y2="90"/>
+
+    <!-- Upright -->
+    <line x1="146.4" y1="70" x2="146.4" y2="90"/>    
+    <line x1="183.2" y1="70" x2="183.2" y2="90"/>
+    <line x1="220"   y1="70" x2="220"   y2="90"/>
+  </g>
+
+  <!-- Divider line -->
+  <line x1="12" y1="56" x2="244" y2="56" stroke="#666" stroke-width="1"/>
+</svg>

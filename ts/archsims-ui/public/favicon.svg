@@ -1,0 +1,27 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- Background -->
+  <rect width="64" height="64" rx="8" fill="#2D2D2D"/>
+
+  <!-- Inner Panel -->
+  <rect x="6" y="6" width="52" height="52" rx="4" fill="#444"/>
+
+  <!-- Simplified Lights (Top Row) -->
+  <g>
+    <circle cx="18" cy="20" r="5" fill="#2ECC40"/> <!-- Green -->
+    <circle cx="32" cy="20" r="5" fill="#FFDC00"/> <!-- Yellow -->
+    <circle cx="46" cy="20" r="5" fill="#FF4136"/> <!-- Red -->
+  </g>
+
+  <!-- Simplified Switches (Bottom Row) -->
+  <g stroke="#AAAAAA" stroke-width="3" stroke-linecap="round">
+    <!-- Up -->
+    <line x1="18" y1="38" x2="16" y2="50"/>
+    <!-- Down (Adjusted) -->
+    <line x1="31" y1="50" x2="33" y2="38"/>
+    <!-- Up -->
+    <line x1="46" y1="38" x2="44" y2="50"/>
+  </g>
+
+  <!-- Optional Divider -->
+  <!-- <line x1="6" y1="32" x2="58" y2="32" stroke="#666" stroke-width="1"/> -->
+</svg>
