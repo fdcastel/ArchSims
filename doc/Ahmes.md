@@ -1,9 +1,5 @@
 # Ahmes — Architecture Manual
 
-> **Implementation status.** Ahmes is **not yet implemented** in this codebase. The only trace of it is the `CpuType.Ahmes` slot in [fs/ArchSims.CmdLine/Common.fs:13](../fs/ArchSims.CmdLine/Common.fs#L13) and the stub in [fs/ArchSims.CmdLine/Main.fs:78](../fs/ArchSims.CmdLine/Main.fs#L78) that raises `Not implemented: Ahmes`. There is no `Ahmes.fs` core module, no assembler, and no test suite. This manual describes the canonical UFRGS Ahmes specification so that a future implementation and its UI can be built against a shared reference.
->
-> Where this document makes concrete bit-level claims (opcodes, flag masks), they follow the published UFRGS teaching materials and the consistent encoding pattern of Neander → Ahmes → Ramses. Before committing an implementation, cross-check specific opcode sub-values against the course's reference binaries and sample programs.
-
 ## 1. Overview
 
 Ahmes is a strict extension of Neander — same 8-bit word, same 256-byte memory, same single accumulator, same single addressing mode. What it adds is **arithmetic breadth**: subtraction, shift and rotate instructions, a carry/borrow/overflow flag trio, and a full set of conditional jumps keyed on those new flags.
@@ -20,6 +16,10 @@ Family position:
 | Cesar   | 16-bit, eight registers, eight addressing modes, stack, memory-mapped I/O |
 
 Because Ahmes preserves Neander's "one accumulator, one addressing mode" simplicity, a student's mental model carries over intact — the only new lesson is "more flags, more arithmetic, more branches."
+
+Source of truth: [fs/ArchSims.Core/Ahmes.fs](../fs/ArchSims.Core/Ahmes.fs), [fs/ArchSims.Core/Memory.fs](../fs/ArchSims.Core/Memory.fs).
+
+Note: the codebase does not ship an assembler for Ahmes (only Ramses and Cesar have one — this is intentional, matching Neander). The CLI runner also does not dispatch Ahmes ([fs/ArchSims.CmdLine/Main.fs:78](../fs/ArchSims.CmdLine/Main.fs#L78) raises `Not implemented: Ahmes`). Programs are exercised through the `Ahmes` F# module directly and through the test suite ([fs/ArchSims.Core.Tests/AhmesTests.fs](../fs/ArchSims.Core.Tests/AhmesTests.fs)).
 
 ## 2. Programmer's Model
 
@@ -97,11 +97,11 @@ Opcodes given as conventional UFRGS Ahmes encoding — high nibble is the primar
 | `ROL`    | `0xE3`       | 1     | no       | N, Z, **C**   | Rotate left through carry: `tmp ← C; C ← AC[7]; AC ← AC << 1; AC[0] ← tmp` |
 | `HLT`    | `0xF0`       | 1     | no       | Halted        | Stops the CPU                  |
 
-Caveats to verify against UFRGS reference material before implementing:
+Decoding conventions locked in by [Ahmes.fs](../fs/ArchSims.Core/Ahmes.fs):
 
-- **Jump sub-opcodes.** The canonical Ahmes encoding uses the low two bits of the conditional-jump opcodes to select `positive`, `negative`, and the "is/not" flavors. The values above (`0x94`, `0x9C`, `0xA4`, `0xB4`, `0xB8`, `0xBC`) follow the bit-pattern convention `1001 FF 00`/`1010 F0 00`/`1011 FF 00` where `F` is the flag and the `0`/`1` selects "jump if set" / "jump if clear". Confirm with a course binary before shipping.
-- **Shift/rotate sub-opcodes.** The `0xE0..0xE3` block is the common layout: `SHR`, `SHL`, `ROR`, `ROL` in sub-opcode order. Some materials reverse `ROR`/`ROL` — verify.
-- **Flag rules for `SUB`.** UFRGS materials differ slightly on whether `SUB` sets `Carry` (as "inverted borrow", like Ramses) or leaves `Carry` alone and sets `Borrow`. The most common specification is the latter: `ADD` → `C`, `SUB` → `B`, and they are independent.
+- **Jump sub-opcodes.** The low bits of the conditional-jump opcodes select the flag and "is/not" flavor: `1001 FF __` for `N`/`V`, `1010 __ __` for `Z`, `1011 FF __` for `C`/`B`. Bytes not listed in the table decode as `NOP` (i.e., they neither branch nor consume an operand).
+- **Shift/rotate sub-opcodes.** `0xE0..0xE3` = `SHR`, `SHL`, `ROR`, `ROL` — any other byte in the `0xE_` range decodes as `NOP`.
+- **Flag rules for `SUB`.** `ADD` sets `C`, `SUB` sets `B`, and the two flags are independent (`SUB` leaves `C` untouched). This matches the more common UFRGS specification and keeps the "one operation, one flag" intuition intact.
 
 ### 3.2 Addressing
 
@@ -141,7 +141,7 @@ The `Halted` flag follows the Neander convention: set at end of `HLT` execution,
 
 ## 6. Small Example Programs
 
-Ahmes does not yet have a shipping assembler in this repo. Programs should be shown as hand-assembled bytes, in the Neander style.
+Ahmes does not ship an assembler (intentional — same convention as Neander). Programs are shown as hand-assembled bytes, in the Neander style.
 
 ### 6.1 16-bit addition
 
@@ -204,15 +204,3 @@ Ahmes looks almost exactly like Neander on screen — the UI should emphasize th
 8. **Disassembler.** Following the pattern of `DisassembleInstruction` in [Ramses.fs:221](../fs/ArchSims.Core/Ramses.fs#L221), an Ahmes disassembler should be straightforward. It needs to decode the four-way sub-opcode switch for conditional jumps and the four-way sub-opcode switch for shifts/rotates — the only non-trivial decoding in the ISA.
 9. **Binary file format.** If an Ahmes `.mem` loader is added later, follow the family convention: four-byte ASCII prefix `^C A H M` (`0x03 'A' 'H' 'M'`), then the 256 memory bytes. Cf. [RamsesCmdLine.fs:62](../fs/ArchSims.CmdLine/RamsesCmdLine.fs#L62) and [CesarCmdLine.fs:74](../fs/ArchSims.CmdLine/CesarCmdLine.fs#L74) — each simulator has a distinct prefix so loaders can refuse a mismatched file.
 10. **Borrowing Neander UI.** Ahmes shares Neander's memory layout, cycle, and accumulator. A well-factored UI should reuse the memory grid, IR widget, register tiles, and debugger wiring from the Neander frontend, parameterizing only the flag row, the opcode decoder, and the disassembler. This also makes it easier to present "the same program running on Neander" side by side to show where Ahmes's new flags and instructions help.
-
-## 8. Implementation Checklist (for a Future `Ahmes.fs`)
-
-Because no core module exists yet, a concrete starting plan:
-
-1. **`Ahmes.fs`** modelled on [Neander.fs](../fs/ArchSims.Core/Neander.fs): same `CreateCpu`, `Fetch`, `Execute`, `Step`, `Reset` signatures. Add `Carry`, `Overflow`, `Borrow` to `Flags`.
-2. Instruction enum with all opcodes above. Consider a nested `ShiftOp` / `JumpOp` enum for the sub-opcode families, or match on the full byte — whichever keeps the pattern match legible.
-3. **`AhmesTests.fs`** covering every instruction, flag combination, `PC` wraparound, and `Halted` semantics — following the shape of [NeanderTests.fs](../fs/ArchSims.Core.Tests/NeanderTests.fs) and [RamsesTests.fs](../fs/ArchSims.Core.Tests/RamsesTests.fs).
-4. **`AhmesAssembler.fs`** using FParsec, following [RamsesAssembler.fs](../fs/ArchSims.Assemblers/RamsesAssembler.fs) with register parsing removed and shift/rotate mnemonics added.
-5. **`AhmesCmdLine.fs`** following [RamsesCmdLine.fs](../fs/ArchSims.CmdLine/RamsesCmdLine.fs); add `C`, `V`, `B` to the printed flag line.
-6. Wire the new entry point in [Main.fs:78](../fs/ArchSims.CmdLine/Main.fs#L78) replacing the `failwith`.
-7. Verify against a canonical Ahmes reference program (the UFRGS course repository ships sample `.mem` binaries) before considering the implementation complete.

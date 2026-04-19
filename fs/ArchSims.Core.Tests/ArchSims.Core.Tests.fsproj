@@ -16,6 +16,7 @@
     <Compile Include="Utils.fs" />
     <Compile Include="DebuggerTests.fs" />
     <Compile Include="NeanderTests.fs" />
+    <Compile Include="AhmesTests.fs" />
     <Compile Include="RamsesTests.fs" />
     <Compile Include="CesarTests.fs" />
   </ItemGroup>

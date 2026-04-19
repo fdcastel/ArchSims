@@ -8,6 +8,7 @@
     <Compile Include="Memory.fs" />
     <Compile Include="Debugger.fs" />
     <Compile Include="Neander.fs" />
+    <Compile Include="Ahmes.fs" />
     <Compile Include="Ramses.fs" />
     <Compile Include="Cesar.fs" />
   </ItemGroup>
