@@ -6,7 +6,7 @@ Simulators for use in computer architecture classes.
 
 This project is a [_clean room_](https://en.wikipedia.org/wiki/Clean_room_design) implementation of the [hypothetical machines](https://pt.wikipedia.org/wiki/M%C3%A1quinas_hipot%C3%A9ticas_da_Universidade_Federal_do_Rio_Grande_do_Sul) used in computer architecture classes at the [Institute of Informatics](http://www.inf.ufrgs.br) of Universidade Federal do Rio Grande do Sul.
 
-The goal is to faithfully recreate the [instruction set architecture](https://en.wikipedia.org/wiki/Instruction_set_architecture) of each machine. To that end, every implementation is backed by an extensive test suite and follows the original specifications provided by professors Raul Fernando Weber and Taisy Silva Weber.
+The goal is to faithfully recreate the [instruction set architecture](https://en.wikipedia.org/wiki/Instruction_set_architecture) of each machine. Every implementation is backed by an extensive test suite and follows the original specifications provided by professors Raul Fernando Weber and Taisy Silva Weber.
 
 The four machines form a progression of increasing complexity:
 
@@ -35,7 +35,10 @@ This repository contains:
 
 ## Prerequisites
 
-  - .NET 9
+  - [.NET 9](https://dotnet.microsoft.com/download)
+  - [PowerShell 7+](https://github.com/PowerShell/PowerShell) (to run the sample scripts)
+
+Both are cross-platform, so the project and its samples run on Windows, macOS, and Linux.
 
 ## To run the tests
 
@@ -45,7 +48,13 @@ dotnet test
 
 ## To run the samples
 
-Run the `.cmd` scripts from the [Samples](Samples) folder (Windows only).
+Run the `.ps1` scripts from the [Samples](Samples) folder:
+
+```
+pwsh Samples/Demo-Ramses.ps1
+pwsh Samples/Demo-Cesar.ps1
+pwsh Samples/Demo-Cesar-Debug.ps1
+```
 
 ## Special thanks
 
