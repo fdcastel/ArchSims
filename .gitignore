@@ -16,3 +16,9 @@ bin
 # End of https://www.gitignore.io/api/fsharp
 
 /tmp
+
+# web/
+web/node_modules
+web/dist
+web/.astro
+web/.wrangler
