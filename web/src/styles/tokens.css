@@ -1,0 +1,170 @@
+/* =========================================================
+   ArchSims — chassis design tokens
+   Ported from tmp/design-refs/ramses/assets/styles.css
+   Palettes: amber (dark warm) · green (dark CRT) · paper (light)
+   ========================================================= */
+
+:root {
+  --chassis: #1a1916;
+  --chassis-2: #22201c;
+  --chassis-edge: #0d0c0a;
+  --screw: #4a453d;
+  --silk: #cfc6b6;
+  --silk-dim: #8a8372;
+  --silk-etch: #a59d8a;
+  --phosphor: #f4a728;
+  --phosphor-hi: #ffd27a;
+  --phosphor-glow: rgba(244, 167, 40, 0.35);
+  --phosphor-dim: rgba(244, 167, 40, 0.25);
+  --readout-bg: #0a0906;
+  --readout-edge: #000;
+  --accent: #f4a728;
+  --accent-soft: #b87b0c;
+  --red: #ef4444;
+  --green: #4ade80;
+  --grid-gap: 2px;
+  --density-scale: 1;
+}
+
+/* GREEN palette */
+.chassis-green {
+  --chassis: #171a18;
+  --chassis-2: #1e2220;
+  --chassis-edge: #0a0c0b;
+  --phosphor: #5dfb9b;
+  --phosphor-hi: #c2ffde;
+  --phosphor-glow: rgba(93, 251, 155, 0.32);
+  --phosphor-dim: rgba(93, 251, 155, 0.22);
+  --accent: #5dfb9b;
+  --accent-soft: #2d9e5a;
+  --silk: #c4d2c7;
+  --silk-dim: #809789;
+  --silk-etch: #9cb0a1;
+}
+
+/* PAPER palette */
+.chassis-paper {
+  --chassis: #efe7d6;
+  --chassis-2: #e6dcc6;
+  --chassis-edge: #c9bd9e;
+  --screw: #a89c80;
+  --silk: #2b2722;
+  --silk-dim: #5e574a;
+  --silk-etch: #7a7262;
+  --phosphor: #111;
+  --phosphor-hi: #222;
+  --phosphor-glow: rgba(0, 0, 0, 0.08);
+  --phosphor-dim: rgba(0, 0, 0, 0.22);
+  --readout-bg: #faf4e4;
+  --readout-edge: #b9ad8d;
+  --accent: #b84b12;
+  --accent-soft: #d97c3c;
+  --red: #b01818;
+  --green: #2f7d3f;
+}
+
+.density-compact {
+  --density-scale: 0.88;
+}
+
+/* Base shell ------------------------------------------------ */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: #0a0907;
+  color: var(--silk);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  -webkit-font-smoothing: antialiased;
+}
+.chassis-paper body,
+body.chassis-paper {
+  background: #c9bd9e;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+.chassis {
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(244, 167, 40, 0.05), transparent 40%),
+    linear-gradient(180deg, var(--chassis) 0%, var(--chassis-2) 100%);
+  background-attachment: fixed;
+  position: relative;
+  box-sizing: border-box;
+}
+.chassis.chassis-paper {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.015) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, var(--chassis) 0%, var(--chassis-2) 100%);
+}
+
+/* CRT scanlines overlay ------------------------------------ */
+
+.scanlines {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.025) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: overlay;
+  z-index: 1000;
+}
+.scanlines-paper {
+  display: none;
+}
+
+/* Silkscreen etched label ---------------------------------- */
+
+.etch {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--silk-etch);
+  text-transform: uppercase;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  margin-bottom: 10px;
+}
+.chassis-paper .etch {
+  border-bottom-color: rgba(0, 0, 0, 0.15);
+}
+.etch-inline {
+  border: none;
+  padding: 0;
+  margin: 0 8px 0 0;
+  display: inline-block;
+}
+
+/* Panel card chrome (used by register groups, IR decoder, etc.) */
+.panel-card {
+  background: var(--chassis-2);
+  border: 1px solid var(--chassis-edge);
+  border-radius: 8px;
+  padding: calc(14px * var(--density-scale));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 2px 0 var(--chassis-edge);
+  position: relative;
+}
+.chassis-paper .panel-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    0 2px 0 var(--chassis-edge);
+}
+
+/* Reduced-motion respect: disable scanlines for users who opt out. */
+@media (prefers-reduced-motion: reduce) {
+  .scanlines {
+    display: none;
+  }
+}

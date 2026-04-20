@@ -1,4 +1,6 @@
 ---
+import '../styles/tokens.css';
+
 interface Props {
   title: string;
   description?: string;
@@ -33,16 +35,6 @@ const { title, description = 'ArchSims — interactive simulators for the Weber 
     <style is:global>
       :root {
         color-scheme: dark;
-        font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
-      }
-
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        min-height: 100%;
-        background: #0b0c0a;
-        color: #f2e0b2;
       }
 
       a {
