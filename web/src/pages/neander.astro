@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import PrimitivesDemo from '../ui/primitives/PrimitivesDemo.svelte';
 ---
 
 <Layout title="NEANDER · Front Panel">
@@ -15,6 +16,10 @@ import Layout from '../layouts/Layout.astro';
       <p>
         <a href="/manuals/neander">Read the manual</a>
       </p>
+    </section>
+
+    <section class="preview">
+      <PrimitivesDemo client:load />
     </section>
   </main>
 
@@ -45,6 +50,9 @@ import Layout from '../layouts/Layout.astro';
     }
     .placeholder p {
       margin: 0.25rem 0;
+    }
+    .preview {
+      margin-top: 1.5rem;
     }
   </style>
 </Layout>
