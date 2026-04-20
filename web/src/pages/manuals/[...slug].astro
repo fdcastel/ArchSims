@@ -1,0 +1,83 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('manuals');
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const displayName = entry.id.toUpperCase();
+---
+
+<Layout title={`${displayName} · Manual`}>
+  <main class="manual">
+    <nav class="crumbs">
+      <a href="/">&larr; ArchSims</a>
+      <span> / </span>
+      <a href={`/${entry.id}`}>{displayName} panel</a>
+    </nav>
+
+    <article class="prose">
+      <Content />
+    </article>
+  </main>
+
+  <style>
+    .manual {
+      max-width: 48rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    .crumbs {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-bottom: 1.5rem;
+    }
+    .crumbs a {
+      text-decoration: none;
+    }
+    .crumbs a:hover {
+      text-decoration: underline;
+    }
+    .prose {
+      line-height: 1.6;
+    }
+    .prose :global(h1),
+    .prose :global(h2),
+    .prose :global(h3) {
+      letter-spacing: 0.05em;
+    }
+    .prose :global(pre) {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .prose :global(code) {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.1em 0.3em;
+      border-radius: 3px;
+    }
+    .prose :global(pre code) {
+      background: transparent;
+      padding: 0;
+    }
+    .prose :global(table) {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1rem 0;
+    }
+    .prose :global(th),
+    .prose :global(td) {
+      border: 1px solid rgba(242, 224, 178, 0.15);
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+    }
+  </style>
+</Layout>

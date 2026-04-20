@@ -24,6 +24,6 @@
       "@/samples/*": ["src/samples/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "*.config.*", "*.d.ts"],
-  "exclude": ["node_modules", "dist", ".astro"]
+  "include": ["src/**/*", "tests/**/*", "*.config.*", "*.d.ts", ".astro/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,0 +1,50 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="AHMES · Front Panel">
+  <main class="shell">
+    <header>
+      <a class="back" href="/">&larr; ArchSims</a>
+      <h1>AHMES</h1>
+      <p class="tagline">Neander, extended · 23 opcodes · shifts · carry / borrow / overflow</p>
+    </header>
+
+    <section class="placeholder" aria-live="polite">
+      <p>Front panel under construction (see Phase 4, task P4-02).</p>
+      <p>
+        <a href="/manuals/ahmes">Read the manual</a>
+      </p>
+    </section>
+  </main>
+
+  <style>
+    .shell {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    .back {
+      text-decoration: none;
+      opacity: 0.7;
+      font-size: 0.85rem;
+    }
+    h1 {
+      letter-spacing: 0.15em;
+      margin: 0.75rem 0 0;
+    }
+    .tagline {
+      opacity: 0.7;
+      margin: 0.25rem 0 2rem;
+    }
+    .placeholder {
+      border: 1px dashed rgba(242, 224, 178, 0.25);
+      padding: 2rem;
+      border-radius: 4px;
+      opacity: 0.85;
+    }
+    .placeholder p {
+      margin: 0.25rem 0;
+    }
+  </style>
+</Layout>

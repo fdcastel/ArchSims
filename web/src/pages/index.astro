@@ -1,0 +1,158 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const machines = [
+  {
+    slug: 'neander',
+    name: 'NEANDER',
+    manual: 'neander',
+    tagline: '8-bit accumulator — the starting point.',
+    blurb: 'One accumulator, three flags, 11 opcodes. The simplest Weber machine — made to teach fetch / decode / execute.',
+  },
+  {
+    slug: 'ahmes',
+    name: 'AHMES',
+    manual: 'ahmes',
+    tagline: 'Neander, extended — shifts, rotates, arithmetic.',
+    blurb: 'Adds carry, borrow, overflow, unsigned compares, and bit-shift instructions. Still one accumulator, still 256 bytes.',
+  },
+  {
+    slug: 'ramses',
+    name: 'RAMSES',
+    manual: 'ramses',
+    tagline: 'Three registers, four addressing modes.',
+    blurb: 'RA / RB / RX, immediate / direct / indirect / indexed. Introduces JSR self-linking and real operand encoding in the IR.',
+  },
+  {
+    slug: 'cesar',
+    name: 'CESAR',
+    manual: 'cesar',
+    tagline: '16-bit, eight registers, 64 KiB, memory-mapped I/O.',
+    blurb: 'Eight 16-bit registers (R6=SP, R7=PC), eight addressing modes, display + keyboard at the top of memory. The family\u2019s flagship.',
+  },
+];
+---
+
+<Layout title="ArchSims · Weber machine simulators">
+  <main class="landing">
+    <header class="masthead">
+      <h1>ArchSims</h1>
+      <p class="subtitle">Interactive front panels for the four Weber didactic CPUs.</p>
+    </header>
+
+    <section class="chain" aria-label="Machine progression">
+      <ol class="cards">
+        {machines.map((m) => (
+          <li class="card">
+            <a class="card-link" href={`/${m.slug}`}>
+              <span class="card-name">{m.name}</span>
+              <span class="card-tagline">{m.tagline}</span>
+              <span class="card-blurb">{m.blurb}</span>
+              <span class="card-cta">Open panel &rarr;</span>
+            </a>
+            <a class="card-manual" href={`/manuals/${m.manual}`}>Read the manual</a>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <footer class="foot">
+      <p>
+        NEANDER &rarr; AHMES &rarr; RAMSES &rarr; CESAR &nbsp; &mdash; &nbsp; each machine builds on the previous.
+      </p>
+    </footer>
+  </main>
+
+  <style>
+    .landing {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    .masthead h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      letter-spacing: 0.1em;
+      margin: 0;
+    }
+
+    .subtitle {
+      opacity: 0.7;
+      margin: 0.5rem 0 2.5rem;
+    }
+
+    .cards {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    }
+
+    .card {
+      border: 1px solid rgba(242, 224, 178, 0.2);
+      border-radius: 4px;
+      padding: 1.25rem 1.25rem 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .card-link {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card-link:hover .card-cta,
+    .card-link:focus-visible .card-cta {
+      color: #ffd369;
+    }
+
+    .card-name {
+      font-size: 1.4rem;
+      letter-spacing: 0.15em;
+      font-weight: 600;
+    }
+
+    .card-tagline {
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
+
+    .card-blurb {
+      opacity: 0.7;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .card-cta {
+      margin-top: 0.3rem;
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+
+    .card-manual {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-decoration: none;
+      border-top: 1px dashed rgba(242, 224, 178, 0.15);
+      padding-top: 0.6rem;
+    }
+
+    .card-manual:hover {
+      opacity: 1;
+    }
+
+    .foot {
+      margin-top: 3rem;
+      opacity: 0.5;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+  </style>
+</Layout>
