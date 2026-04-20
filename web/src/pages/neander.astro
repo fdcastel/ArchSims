@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import PrimitivesDemo from '../ui/primitives/PrimitivesDemo.svelte';
+import ChassisDemo from '../ui/chassis/ChassisDemo.svelte';
 ---
 
 <Layout title="NEANDER · Front Panel">
@@ -20,6 +21,10 @@ import PrimitivesDemo from '../ui/primitives/PrimitivesDemo.svelte';
 
     <section class="preview">
       <PrimitivesDemo client:load />
+    </section>
+
+    <section class="preview">
+      <ChassisDemo client:load />
     </section>
   </main>
 
