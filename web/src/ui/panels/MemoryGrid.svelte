@@ -19,6 +19,9 @@
     pageStart?: number;
     pageSize?: number;
     title?: string;
+    addrDigits?: 2 | 4;
+    /** Addresses in this range (inclusive lo..hi) render with an MMIO indicator. */
+    mmioRange?: { lo: number; hi: number } | null;
   }
 
   let {
@@ -37,6 +40,8 @@
     pageStart = 0,
     pageSize = 256,
     title,
+    addrDigits = 2,
+    mmioRange = null,
   }: Props = $props();
 
   const bps = $derived(breakpoints ?? new Set<number>());
@@ -67,8 +72,10 @@
     const isEff = effAddr !== null && addr === effAddr;
     const isHover = hoveredAddr === addr;
     const isBP = bps.has(addr);
+    const isMmio = mmioRange !== null && addr >= mmioRange.lo && addr <= mmioRange.hi;
     const classes = ['mcell'];
     if (v === 0) classes.push('mcell-zero');
+    if (isMmio) classes.push('mcell-mmio');
     if (isIrSpan) classes.push('mcell-ir');
     if (isIrStart) classes.push('mcell-ir-start');
     if (isRead && !isWrite) classes.push('mcell-read');
@@ -81,11 +88,12 @@
   }
 
   function rowLabel(addr: number): string {
-    return (addr >> 4).toString(16).toUpperCase().padStart(2, '0');
+    const rowDigits = Math.max(1, addrDigits - 1);
+    return (addr >> 4).toString(16).toUpperCase().padStart(rowDigits, '0');
   }
 </script>
 
-<div class="mem-wrap">
+<div class="mem-wrap" class:wide-addr={addrDigits === 4}>
   <div class="mem-head">
     <Etch>{headerTitle}</Etch>
     <div class="mem-legend">
@@ -94,6 +102,9 @@
       <span class="lg lg-read">READ</span>
       <span class="lg lg-write">WRITE</span>
       <span class="lg lg-bp">BP</span>
+      {#if mmioRange}
+        <span class="lg lg-mmio">MMIO</span>
+      {/if}
     </div>
   </div>
   <div class="mem-grid">
@@ -186,6 +197,9 @@
     gap: var(--grid-gap);
     margin-bottom: var(--grid-gap);
   }
+  .mem-wrap.wide-addr .mrow {
+    grid-template-columns: 46px repeat(16, 1fr);
+  }
   .mrow-header {
     margin-bottom: 4px;
   }
@@ -267,7 +281,15 @@
     background: #ef4482;
     box-shadow: 0 0 4px #ef4482;
   }
+  .mcell-mmio {
+    background: rgba(244, 167, 40, 0.08);
+    border-color: rgba(244, 167, 40, 0.4);
+  }
   .mcell-oob {
     visibility: hidden;
+  }
+  .lg-mmio {
+    color: var(--accent);
+    border-color: var(--accent);
   }
 </style>
