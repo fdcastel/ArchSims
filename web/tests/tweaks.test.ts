@@ -61,6 +61,7 @@ describe('tweaksStore', () => {
       density: 'comfortable',
       showAnnotations: false,
       frame: 'mobile',
+      showFetchCycle: true,
     };
     storage.setItem('cesar.tweaks', JSON.stringify(persisted));
 

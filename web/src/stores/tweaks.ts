@@ -11,6 +11,8 @@ export interface Tweaks {
   density: Density;
   showAnnotations: boolean;
   frame: Frame;
+  /** Show fetch/decode/execute/flags sub-step animator (P4-06). */
+  showFetchCycle: boolean;
 }
 
 export type Machine = 'neander' | 'ahmes' | 'ramses' | 'cesar';
@@ -21,6 +23,7 @@ export const TWEAKS_DEFAULTS: Tweaks = {
   density: 'compact',
   showAnnotations: true,
   frame: 'desktop',
+  showFetchCycle: false,
 };
 
 export const tweaksStorageKey = (machine: Machine): string => `${machine}.tweaks`;

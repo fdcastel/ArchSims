@@ -8,6 +8,7 @@ export { default as NeanderPanel } from './NeanderPanel.svelte';
 export { default as AhmesPanel } from './AhmesPanel.svelte';
 export { default as RamsesPanel } from './RamsesPanel.svelte';
 export { default as CesarPanel } from './CesarPanel.svelte';
+export { default as FetchCycle } from './FetchCycle.svelte';
 export { default as ShiftRotateAnimation } from './ShiftRotateAnimation.svelte';
 export { default as AddressingModeArrow } from './AddressingModeArrow.svelte';
 export { default as DisplayPanel } from './DisplayPanel.svelte';

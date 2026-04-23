@@ -203,6 +203,22 @@
         </div>
       </div>
     </div>
+
+    <div class="sd-row">
+      <div class="sd-row-meta">
+        <div class="sd-row-label">Fetch-cycle widget</div>
+        <div class="sd-row-hint">Animate fetch / decode / execute / flags on each step</div>
+      </div>
+      <div class="sd-row-ctrls">
+        <div class="sd-seg">
+          {#each annotationOptions as o (o.v)}
+            <button type="button" class="sd-seg-btn" class:sd-on={($tweaks.showFetchCycle ? 'on' : 'off') === o.v} onclick={() => tweaks.patch({ showFetchCycle: o.v === 'on' })}>
+              <span>{o.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="sd-section">

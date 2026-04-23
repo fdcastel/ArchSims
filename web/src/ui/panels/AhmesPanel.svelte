@@ -14,6 +14,7 @@
   import ServiceDrawer from '../chassis/ServiceDrawer.svelte';
   import Controls from './Controls.svelte';
   import Disassembly from './Disassembly.svelte';
+  import FetchCycle from './FetchCycle.svelte';
   import FlagBank from './FlagBank.svelte';
   import IRDecoder from './IRDecoder.svelte';
   import MemoryGrid from './MemoryGrid.svelte';
@@ -351,6 +352,10 @@
       </div>
 
       <FlagBank {flags} accent={accentAll} title="FLAGS · N Z V C B" />
+
+      {#if $tweaks.showFetchCycle}
+        <FetchCycle steps={$cpuStore.tick} hasSource={false} />
+      {/if}
 
       <ShiftRotateAnimation
         ac={regs.accumulator}

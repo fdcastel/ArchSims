@@ -24,6 +24,7 @@
   import Controls from './Controls.svelte';
   import Disassembly from './Disassembly.svelte';
   import DisplayPanel from './DisplayPanel.svelte';
+  import FetchCycle from './FetchCycle.svelte';
   import FlagBank from './FlagBank.svelte';
   import IRDecoder from './IRDecoder.svelte';
   import KeyboardInput from './KeyboardInput.svelte';
@@ -484,6 +485,10 @@
       </div>
 
       <FlagBank {flags} accent={accentAll} title="FLAGS · N Z V C" />
+
+      {#if $tweaks.showFetchCycle}
+        <FetchCycle steps={$cpuStore.tick} hasSource={isTwoOperand} />
+      {/if}
 
       {#if sobRemaining() !== null && $tweaks.showAnnotations}
         <div class="sob-note">
