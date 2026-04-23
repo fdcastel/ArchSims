@@ -30,6 +30,7 @@
   import KeyboardInput from './KeyboardInput.svelte';
   import MemoryGrid from './MemoryGrid.svelte';
   import RegisterTile from './RegisterTile.svelte';
+  import SourceView from './SourceView.svelte';
   import StackPanel from './StackPanel.svelte';
   import { fmtBin8, fmtHex2, fmtHex4 } from './format';
   import { createRunLoop } from './run-loop';
@@ -603,6 +604,16 @@
         depth={8}
         showEmpty={r6EverWritten}
         accent={accentAll}
+      />
+
+      <SourceView
+        source={BITSHIFT_SOURCE}
+        addrToLine={sample.addrToLine}
+        pc={pc}
+        irAddr={irStart}
+        breakpoints={breakpoints}
+        onToggleBreakpoint={toggleBreakpoint}
+        title="SOURCE · BITSHIFT.CESAR"
       />
     </section>
   </div>

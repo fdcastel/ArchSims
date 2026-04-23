@@ -25,6 +25,7 @@
   import IRDecoder from './IRDecoder.svelte';
   import MemoryGrid from './MemoryGrid.svelte';
   import RegisterTile from './RegisterTile.svelte';
+  import SourceView from './SourceView.svelte';
   import { fmtBin8, fmtHex2 } from './format';
   import { createRunLoop } from './run-loop';
   import type { BitGroup, DisasmItem, FlagSpec, OperandRow } from './types';
@@ -475,6 +476,15 @@
         breakpoints={breakpoints}
         onToggleBreakpoint={toggleBreakpoint}
         title="DISASSEMBLY · BITSHIFT.RAMSES"
+      />
+      <SourceView
+        source={BITSHIFT_SOURCE}
+        addrToLine={sample.addrToLine}
+        pc={regs.programCounter}
+        irAddr={irStart}
+        breakpoints={breakpoints}
+        onToggleBreakpoint={toggleBreakpoint}
+        title="SOURCE · BITSHIFT.RAMSES"
       />
     </section>
   </div>
