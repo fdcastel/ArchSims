@@ -4,6 +4,7 @@ export { default as IRDecoder } from './IRDecoder.svelte';
 export { default as MemoryGrid } from './MemoryGrid.svelte';
 export { default as Disassembly } from './Disassembly.svelte';
 export { default as Controls } from './Controls.svelte';
+export { default as NeanderPanel } from './NeanderPanel.svelte';
 export * from './types';
 export * from './format';
 export * from './run-loop';

@@ -270,3 +270,74 @@ export function ahmesReset(cpu: AhmesCpu): void {
   ahmesRegistersReset(cpu.registers);
   memoryReset(cpu.memory);
 }
+
+interface DisassembledInstruction {
+  text: string;
+  size: number;
+  mnemonic: string;
+  category: AhmesCategory;
+}
+
+export type AhmesCategory = 'neander' | 'arith' | 'shift' | 'jump-ext' | 'other';
+
+const AHMES_MNEMONICS: Record<number, { name: string; category: AhmesCategory }> = {
+  [AhmesInstruction.Nop]: { name: 'NOP', category: 'other' },
+  [AhmesInstruction.Sta]: { name: 'STA', category: 'neander' },
+  [AhmesInstruction.Lda]: { name: 'LDA', category: 'neander' },
+  [AhmesInstruction.Add]: { name: 'ADD', category: 'neander' },
+  [AhmesInstruction.Or]: { name: 'OR ', category: 'neander' },
+  [AhmesInstruction.And]: { name: 'AND', category: 'neander' },
+  [AhmesInstruction.Not]: { name: 'NOT', category: 'neander' },
+  [AhmesInstruction.Sub]: { name: 'SUB', category: 'arith' },
+  [AhmesInstruction.Jmp]: { name: 'JMP', category: 'neander' },
+  [AhmesInstruction.Jn]: { name: 'JN ', category: 'neander' },
+  [AhmesInstruction.Jp]: { name: 'JP ', category: 'jump-ext' },
+  [AhmesInstruction.Jv]: { name: 'JV ', category: 'jump-ext' },
+  [AhmesInstruction.Jnv]: { name: 'JNV', category: 'jump-ext' },
+  [AhmesInstruction.Jz]: { name: 'JZ ', category: 'neander' },
+  [AhmesInstruction.Jnz]: { name: 'JNZ', category: 'jump-ext' },
+  [AhmesInstruction.Jc]: { name: 'JC ', category: 'jump-ext' },
+  [AhmesInstruction.Jnc]: { name: 'JNC', category: 'jump-ext' },
+  [AhmesInstruction.Jb]: { name: 'JB ', category: 'jump-ext' },
+  [AhmesInstruction.Jnb]: { name: 'JNB', category: 'jump-ext' },
+  [AhmesInstruction.Shr]: { name: 'SHR', category: 'shift' },
+  [AhmesInstruction.Shl]: { name: 'SHL', category: 'shift' },
+  [AhmesInstruction.Ror]: { name: 'ROR', category: 'shift' },
+  [AhmesInstruction.Rol]: { name: 'ROL', category: 'shift' },
+  [AhmesInstruction.Hlt]: { name: 'HLT', category: 'other' },
+};
+
+export function ahmesDisassembleInstruction(
+  content: ArrayLike<number>,
+): DisassembledInstruction {
+  if (content.length === 0) return { text: '', size: 0, mnemonic: '', category: 'other' };
+  const op = content[0] ?? 0;
+  const entry = AHMES_MNEMONICS[op] ?? { name: 'NOP', category: 'other' as const };
+  if (instructionTakesOperand(op)) {
+    if (content.length < 2) return { text: '', size: 0, mnemonic: entry.name, category: entry.category };
+    const operand = content[1] ?? 0;
+    return {
+      text: `${entry.name.trimEnd()} ${operand}`,
+      size: 2,
+      mnemonic: entry.name,
+      category: entry.category,
+    };
+  }
+  return { text: entry.name.trimEnd(), size: 1, mnemonic: entry.name, category: entry.category };
+}
+
+export function ahmesDisassembleInstructions(
+  content: ArrayLike<number>,
+): DisassembledInstruction[] {
+  const out: DisassembledInstruction[] = [];
+  let offset = 0;
+  while (offset < content.length) {
+    const slice: number[] = [];
+    for (let i = offset; i < content.length; i++) slice.push(content[i] ?? 0);
+    const item = ahmesDisassembleInstruction(slice);
+    if (item.size === 0) break;
+    out.push(item);
+    offset += item.size;
+  }
+  return out;
+}

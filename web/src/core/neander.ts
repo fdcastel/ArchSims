@@ -155,3 +155,53 @@ export function neanderReset(cpu: NeanderCpu): void {
   neanderRegistersReset(cpu.registers);
   memoryReset(cpu.memory);
 }
+
+interface DisassembledInstruction {
+  text: string;
+  size: number;
+  mnemonic: string;
+}
+
+const NEANDER_MNEMONICS: Record<number, string> = {
+  [NeanderInstruction.Nop]: 'NOP',
+  [NeanderInstruction.Sta]: 'STA',
+  [NeanderInstruction.Lda]: 'LDA',
+  [NeanderInstruction.Add]: 'ADD',
+  [NeanderInstruction.Or]: 'OR ',
+  [NeanderInstruction.And]: 'AND',
+  [NeanderInstruction.Not]: 'NOT',
+  [NeanderInstruction.Jmp]: 'JMP',
+  [NeanderInstruction.Jn]: 'JN ',
+  [NeanderInstruction.Jz]: 'JZ ',
+  [NeanderInstruction.Hlt]: 'HLT',
+};
+
+export function neanderDisassembleInstruction(
+  content: ArrayLike<number>,
+): DisassembledInstruction {
+  if (content.length === 0) return { text: '', size: 0, mnemonic: '' };
+  const op = content[0] ?? 0;
+  const mnemonic = NEANDER_MNEMONICS[op] ?? 'NOP';
+  if (instructionTakesOperand(op)) {
+    if (content.length < 2) return { text: '', size: 0, mnemonic };
+    const operand = content[1] ?? 0;
+    return { text: `${mnemonic.trimEnd()} ${operand}`, size: 2, mnemonic };
+  }
+  return { text: mnemonic.trimEnd(), size: 1, mnemonic };
+}
+
+export function neanderDisassembleInstructions(
+  content: ArrayLike<number>,
+): DisassembledInstruction[] {
+  const out: DisassembledInstruction[] = [];
+  let offset = 0;
+  while (offset < content.length) {
+    const slice: number[] = [];
+    for (let i = offset; i < content.length; i++) slice.push(content[i] ?? 0);
+    const { text, size, mnemonic } = neanderDisassembleInstruction(slice);
+    if (size === 0) break;
+    out.push({ text, size, mnemonic });
+    offset += size;
+  }
+  return out;
+}
