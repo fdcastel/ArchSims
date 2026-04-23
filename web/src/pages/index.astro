@@ -1,158 +1,379 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-const machines = [
+interface MachineCard {
+  slug: string;
+  name: string;
+  manual: string;
+  tagline: string;
+  blurb: string;
+  era: string;
+  stats: Array<{ k: string; v: string }>;
+}
+
+const machines: MachineCard[] = [
   {
     slug: 'neander',
     name: 'NEANDER',
     manual: 'neander',
+    era: 'AP-1971',
     tagline: '8-bit accumulator — the starting point.',
-    blurb: 'One accumulator, three flags, 11 opcodes. The simplest Weber machine — made to teach fetch / decode / execute.',
+    blurb:
+      'One accumulator, three flags, 11 opcodes. The simplest Weber machine — made to teach fetch / decode / execute.',
+    stats: [
+      { k: 'WIDTH', v: '8 bit' },
+      { k: 'OPCODES', v: '11' },
+      { k: 'MEMORY', v: '256 B' },
+    ],
   },
   {
     slug: 'ahmes',
     name: 'AHMES',
     manual: 'ahmes',
+    era: 'AP-1973',
     tagline: 'Neander, extended — shifts, rotates, arithmetic.',
-    blurb: 'Adds carry, borrow, overflow, unsigned compares, and bit-shift instructions. Still one accumulator, still 256 bytes.',
+    blurb:
+      'Adds carry, borrow, overflow, unsigned compares, and bit-shift instructions. Still one accumulator, still 256 bytes.',
+    stats: [
+      { k: 'WIDTH', v: '8 bit' },
+      { k: 'OPCODES', v: '24' },
+      { k: 'FLAGS', v: 'N Z V C B' },
+    ],
   },
   {
     slug: 'ramses',
     name: 'RAMSES',
     manual: 'ramses',
+    era: 'AP-1985',
     tagline: 'Three registers, four addressing modes.',
-    blurb: 'RA / RB / RX, immediate / direct / indirect / indexed. Introduces JSR self-linking and real operand encoding in the IR.',
+    blurb:
+      'RA / RB / RX, immediate / direct / indirect / indexed. Introduces JSR self-linking and real operand encoding in the IR.',
+    stats: [
+      { k: 'WIDTH', v: '8 bit' },
+      { k: 'REGS', v: 'RA · RB · RX' },
+      { k: 'MODES', v: '4' },
+    ],
   },
   {
     slug: 'cesar',
     name: 'CESAR',
     manual: 'cesar',
+    era: 'AP-1991',
     tagline: '16-bit, eight registers, 64 KiB, memory-mapped I/O.',
-    blurb: 'Eight 16-bit registers (R6=SP, R7=PC), eight addressing modes, display + keyboard at the top of memory. The family\u2019s flagship.',
+    blurb:
+      "Eight 16-bit registers (R6=SP, R7=PC), eight addressing modes, display + keyboard at the top of memory. The family's flagship.",
+    stats: [
+      { k: 'WIDTH', v: '16 bit' },
+      { k: 'MEMORY', v: '64 KiB' },
+      { k: 'MODES', v: '8' },
+    ],
   },
 ];
 ---
 
 <Layout title="ArchSims · Weber machine simulators">
-  <main class="landing">
+  <div class="chassis chassis-amber ann-on density-compact frame-desktop landing-shell">
+    <div class="scanlines"></div>
+
     <header class="masthead">
-      <h1>ArchSims</h1>
-      <p class="subtitle">Interactive front panels for the four Weber didactic CPUs.</p>
+      <div class="masthead-left">
+        <div class="logo-mark" aria-hidden="true">
+          <span class="logo-diamond"></span>
+          <span class="logo-diamond logo-diamond-2"></span>
+        </div>
+        <div>
+          <h1>ARCHSIMS</h1>
+          <p class="subtitle">FOUR WEBER DIDACTIC CPUs · FRONT PANELS · IN THE BROWSER</p>
+        </div>
+      </div>
+      <div class="masthead-right">
+        <span class="plate">MEMBRANE SERIES</span>
+      </div>
     </header>
 
     <section class="chain" aria-label="Machine progression">
+      <div class="chain-label">PROGRESSION</div>
+      <div class="chain-row">
+        {machines.map((m, i) => (
+          <span class="chain-piece">
+            <a class="chain-link" href={`/${m.slug}`}>{m.name}</a>
+            {i < machines.length - 1 && <span class="chain-sep">&rarr;</span>}
+          </span>
+        ))}
+      </div>
+    </section>
+
+    <main>
       <ol class="cards">
         {machines.map((m) => (
-          <li class="card">
-            <a class="card-link" href={`/${m.slug}`}>
-              <span class="card-name">{m.name}</span>
-              <span class="card-tagline">{m.tagline}</span>
-              <span class="card-blurb">{m.blurb}</span>
-              <span class="card-cta">Open panel &rarr;</span>
-            </a>
-            <a class="card-manual" href={`/manuals/${m.manual}`}>Read the manual</a>
+          <li class="plaque">
+            <header class="plaque-head">
+              <span class="plaque-name">{m.name}</span>
+              <span class="plaque-era">{m.era}</span>
+            </header>
+            <p class="plaque-tagline">{m.tagline}</p>
+            <dl class="plaque-stats">
+              {m.stats.map((s) => (
+                <div class="plaque-stat">
+                  <dt>{s.k}</dt>
+                  <dd>{s.v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p class="plaque-blurb">{m.blurb}</p>
+            <footer class="plaque-foot">
+              <a class="plaque-cta" href={`/${m.slug}`}>OPEN PANEL &rarr;</a>
+              <a class="plaque-manual" href={`/manuals/${m.manual}`}>manual</a>
+            </footer>
           </li>
         ))}
       </ol>
-    </section>
+    </main>
 
     <footer class="foot">
-      <p>
-        NEANDER &rarr; AHMES &rarr; RAMSES &rarr; CESAR &nbsp; &mdash; &nbsp; each machine builds on the previous.
-      </p>
+      <span>ARCHSIMS · 2026</span>
+      <span>NO SERVERS · NO COOKIES · STATIC BUILD</span>
     </footer>
-  </main>
-
-  <style>
-    .landing {
-      max-width: 72rem;
-      margin: 0 auto;
-      padding: 3rem 1.5rem 5rem;
-    }
-
-    .masthead h1 {
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      letter-spacing: 0.1em;
-      margin: 0;
-    }
-
-    .subtitle {
-      opacity: 0.7;
-      margin: 0.5rem 0 2.5rem;
-    }
-
-    .cards {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 1.25rem;
-      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-    }
-
-    .card {
-      border: 1px solid rgba(242, 224, 178, 0.2);
-      border-radius: 4px;
-      padding: 1.25rem 1.25rem 1rem;
-      background: rgba(255, 255, 255, 0.02);
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-
-    .card-link {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      text-decoration: none;
-      color: inherit;
-    }
-
-    .card-link:hover .card-cta,
-    .card-link:focus-visible .card-cta {
-      color: #ffd369;
-    }
-
-    .card-name {
-      font-size: 1.4rem;
-      letter-spacing: 0.15em;
-      font-weight: 600;
-    }
-
-    .card-tagline {
-      opacity: 0.8;
-      font-size: 0.95rem;
-    }
-
-    .card-blurb {
-      opacity: 0.7;
-      font-size: 0.85rem;
-      line-height: 1.5;
-    }
-
-    .card-cta {
-      margin-top: 0.3rem;
-      font-size: 0.85rem;
-      opacity: 0.9;
-    }
-
-    .card-manual {
-      font-size: 0.8rem;
-      opacity: 0.6;
-      text-decoration: none;
-      border-top: 1px dashed rgba(242, 224, 178, 0.15);
-      padding-top: 0.6rem;
-    }
-
-    .card-manual:hover {
-      opacity: 1;
-    }
-
-    .foot {
-      margin-top: 3rem;
-      opacity: 0.5;
-      font-size: 0.85rem;
-      text-align: center;
-    }
-  </style>
+  </div>
 </Layout>
+
+<style>
+  .landing-shell {
+    padding-bottom: 48px;
+  }
+
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border: 1px solid var(--chassis-edge);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.1)),
+      var(--chassis-2);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 2px 0 var(--chassis-edge);
+    margin-bottom: 18px;
+  }
+  .masthead-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .logo-mark {
+    width: 44px;
+    height: 44px;
+    position: relative;
+  }
+  .logo-diamond {
+    position: absolute;
+    inset: 8px;
+    border: 2px solid var(--accent);
+    transform: rotate(45deg);
+    border-radius: 2px;
+  }
+  .logo-diamond-2 {
+    inset: 16px;
+    border-color: var(--silk);
+    opacity: 0.6;
+  }
+  .masthead h1 {
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    font-size: 28px;
+    color: var(--silk);
+    margin: 0;
+  }
+  .subtitle {
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: var(--silk-dim);
+    margin: 4px 0 0;
+  }
+  .plate {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    color: var(--silk-dim);
+    padding: 5px 10px;
+    border: 1px dashed var(--silk-dim);
+    border-radius: 4px;
+  }
+
+  .chain {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 10px 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+  .chain-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--silk-etch);
+    font-weight: 700;
+  }
+  .chain-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+  }
+  .chain-link {
+    color: var(--silk);
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: background 140ms ease;
+  }
+  .chain-link:hover {
+    background: var(--phosphor-glow);
+    color: var(--accent);
+  }
+  .chain-sep {
+    color: var(--silk-dim);
+    margin: 0 4px;
+  }
+
+  .cards {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  }
+
+  .plaque {
+    background: var(--chassis-2);
+    border: 1px solid var(--chassis-edge);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+      0 2px 0 var(--chassis-edge);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+  }
+  .plaque::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.7;
+    border-radius: 2px;
+  }
+  .plaque-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-left: 14px;
+  }
+  .plaque-name {
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    font-size: 16px;
+    color: var(--silk);
+  }
+  .plaque-era {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: var(--silk-dim);
+    border: 1px solid var(--silk-dim);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .plaque-tagline {
+    padding-left: 14px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--silk);
+    margin: 0;
+  }
+  .plaque-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding-left: 14px;
+    margin: 4px 0 0;
+  }
+  .plaque-stat {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--chassis-edge);
+    border-radius: 3px;
+    padding: 5px 8px;
+  }
+  .plaque-stat dt {
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    color: var(--silk-dim);
+    margin: 0;
+  }
+  .plaque-stat dd {
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-shadow: 0 0 4px var(--phosphor-glow);
+    margin: 2px 0 0;
+    letter-spacing: 0.05em;
+  }
+  .plaque-blurb {
+    padding-left: 14px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--silk-dim);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .plaque-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0 0 14px;
+    margin-top: 4px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.06);
+  }
+  .plaque-cta {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    text-shadow: 0 0 4px var(--phosphor-glow);
+  }
+  .plaque-cta:hover {
+    text-decoration: underline;
+  }
+  .plaque-manual {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--silk-dim);
+    text-decoration: none;
+  }
+  .plaque-manual:hover {
+    color: var(--silk);
+  }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 22px;
+    padding: 10px 16px;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--silk-dim);
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+</style>
