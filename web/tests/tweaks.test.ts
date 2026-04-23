@@ -116,6 +116,7 @@ describe('tweaksStore', () => {
       density: 'compact',
       showAnnotations: false,
       frame: 'mobile',
+      showFetchCycle: false,
     };
     store.set(next);
     expect(get(store)).toEqual(next);

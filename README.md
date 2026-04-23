@@ -19,11 +19,11 @@ The four machines form a progression of increasing complexity:
 
 Each manual documents the programmer's model, instruction set, execution cycle, and UI design suggestions.
 
-There is no UI yet, but there are plans to create one in the future.
-
 ## Content
 
-This repository contains:
+This repository contains two complete implementations: the original F# core plus an in-browser TypeScript port with skeuomorphic front-panel UIs.
+
+### F# core ([fs/](fs))
 
   - Core implementations for Neander, Ahmes, Ramses, and Cesar ([fs/ArchSims.Core](fs/ArchSims.Core))
   - Assemblers for Ramses and Cesar ([fs/ArchSims.Assemblers](fs/ArchSims.Assemblers))
@@ -33,20 +33,33 @@ This repository contains:
     - An adapter to test the Ramses emulator with the same test cases used for Ramses
   - A command-line utility for simple demos ([fs/ArchSims.CmdLine](fs/ArchSims.CmdLine))
 
-## Prerequisites
+### Web UI & TypeScript port ([web/](web))
+
+  - Framework-free TypeScript port of the F# core ([web/src/core/](web/src/core))
+  - TypeScript ports of the Ramses and Cesar assemblers ([web/src/assemblers/](web/src/assemblers))
+  - Skeuomorphic Svelte front panels for each machine ([web/src/ui/](web/src/ui))
+  - Bundled sample programs loadable from each panel's Service drawer ([web/src/samples/](web/src/samples))
+  - Vitest parity suite mirroring the F# NUnit tests ([web/tests/](web/tests))
+  - Static-site output (Astro) — no server, no backend
+
+Roadmap and task status for the web port live in [doc/WEB_UI_PLAN.md](doc/WEB_UI_PLAN.md).
+
+## Running the F# simulators
+
+### Prerequisites
 
   - [.NET 9](https://dotnet.microsoft.com/download)
   - [PowerShell 7+](https://github.com/PowerShell/PowerShell) (to run the sample scripts)
 
 Both are cross-platform, so the project and its samples run on Windows, macOS, and Linux.
 
-## To run the tests
+### Run the tests
 
 ```
 dotnet test
 ```
 
-## To run the samples
+### Run the samples
 
 Run the `.ps1` scripts from the [Samples](Samples) folder:
 
@@ -55,6 +68,27 @@ pwsh Samples/Demo-Ramses.ps1
 pwsh Samples/Demo-Cesar.ps1
 pwsh Samples/Demo-Cesar-Debug.ps1
 ```
+
+## Running the web UI locally
+
+### Prerequisites
+
+  - [Node.js 20+](https://nodejs.org/)
+  - [pnpm 9+](https://pnpm.io/installation)
+
+### Install, test, develop
+
+From the repository root:
+
+```
+pnpm -C web install        # install dependencies (first run only)
+pnpm -C web test            # run the Vitest parity suite
+pnpm -C web dev             # start the dev server at http://localhost:4321
+pnpm -C web build           # produce a static site in web/dist/
+pnpm -C web preview         # serve the built site locally
+```
+
+The dev server auto-opens the landing page with machine cards; each card links to its front panel (`/neander`, `/ahmes`, `/ramses`, `/cesar`) and its manual (`/manuals/<name>`). Every panel exposes a Service drawer (right-edge button) with palette, base, density, sample-loader, and `.mem` image save/load controls.
 
 ## Special thanks
 

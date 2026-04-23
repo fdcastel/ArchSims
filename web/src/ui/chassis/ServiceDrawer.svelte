@@ -11,6 +11,12 @@
     halted: boolean;
   }
 
+  export interface SampleChoice {
+    id: string;
+    name: string;
+    description?: string;
+  }
+
   interface Props {
     open?: boolean;
     onClose?: () => void;
@@ -22,6 +28,9 @@
     onReset?: () => void;
     onLoadSample?: () => void;
     sampleLabel?: string;
+    samples?: readonly SampleChoice[];
+    currentSampleId?: string;
+    onLoadSampleById?: (id: string) => void;
     extraSections?: Snippet;
   }
 
@@ -36,8 +45,16 @@
     onReset,
     onLoadSample,
     sampleLabel = 'SAMPLE',
+    samples,
+    currentSampleId,
+    onLoadSampleById,
     extraSections,
   }: Props = $props();
+
+  let pendingSampleId = $state<string | undefined>(currentSampleId);
+  $effect(() => {
+    if (currentSampleId !== undefined) pendingSampleId = currentSampleId;
+  });
 
   let fileInput: HTMLInputElement | null = $state(null);
   let loadError = $state('');
@@ -253,7 +270,38 @@
       <div class="sd-load-error" role="alert">{loadError}</div>
     {/if}
 
-    {#if onLoadSample}
+    {#if samples && samples.length > 0 && onLoadSampleById}
+      <div class="sd-row sd-row-col">
+        <div class="sd-row-meta">
+          <div class="sd-row-label">Load sample</div>
+          <div class="sd-row-hint">Bundled programs for this machine</div>
+        </div>
+        <div class="sd-sample-ctrls">
+          <select
+            class="sd-select"
+            bind:value={pendingSampleId}
+            aria-label="Sample program"
+          >
+            {#each samples as s (s.id)}
+              <option value={s.id}>{s.name}</option>
+            {/each}
+          </select>
+          <button
+            type="button"
+            class="sd-btn"
+            onclick={() => pendingSampleId && onLoadSampleById(pendingSampleId)}
+          >
+            <span class="sd-btn-icon">↻</span> LOAD
+          </button>
+        </div>
+        {#if pendingSampleId}
+          {@const sel = samples.find((s) => s.id === pendingSampleId)}
+          {#if sel?.description}
+            <div class="sd-sample-desc">{sel.description}</div>
+          {/if}
+        {/if}
+      </div>
+    {:else if onLoadSample}
       <div class="sd-row">
         <div class="sd-row-meta">
           <div class="sd-row-label">Reload sample</div>
@@ -535,6 +583,40 @@
   }
   .sd-btn-danger .sd-btn-icon {
     color: var(--red);
+  }
+
+  .sd-row-col {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .sd-sample-ctrls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .sd-select {
+    flex: 1;
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--chassis-edge);
+    color: var(--silk);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 7px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  :global(.chassis-paper) .sd-select {
+    background: rgba(0, 0, 0, 0.06);
+    color: #2b2722;
+  }
+  .sd-sample-desc {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--silk-dim);
+    font-style: italic;
   }
 
   .sd-load-error {

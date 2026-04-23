@@ -21,6 +21,7 @@
       "@/ui/*": ["src/ui/*"],
       "@/assemblers/*": ["src/assemblers/*"],
       "@/stores/*": ["src/stores/*"],
+      "@/samples": ["src/samples/index"],
       "@/samples/*": ["src/samples/*"]
     }
   },

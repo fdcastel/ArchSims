@@ -7,6 +7,8 @@
     neanderStep,
     type NeanderCpu,
   } from '../../core/neander';
+  import { SAMPLES_BY_MACHINE } from '../../samples';
+  import type { Sample } from '../../samples/types';
   import { createCpuStore } from '../../stores/cpu';
   import { createTweaksStore } from '../../stores/tweaks';
   import Chassis from '../chassis/Chassis.svelte';
@@ -22,26 +24,11 @@
   import { createRunLoop } from './run-loop';
   import type { BitGroup, DisasmItem, FlagSpec, OperandRow } from './types';
 
-  // NEANDER "sum of memory" demo: sum 4 bytes at 0x80..0x83, store at 0x84, halt.
+  const SAMPLES = SAMPLES_BY_MACHINE.neander;
+  let currentSample = $state<Sample>(SAMPLES[0] as Sample);
+
   function sampleBytes(): Uint8Array {
-    const b = new Uint8Array(256);
-    b[0x00] = NeanderInstruction.Lda;
-    b[0x01] = 0x80;
-    b[0x02] = NeanderInstruction.Add;
-    b[0x03] = 0x81;
-    b[0x04] = NeanderInstruction.Add;
-    b[0x05] = 0x82;
-    b[0x06] = NeanderInstruction.Add;
-    b[0x07] = 0x83;
-    b[0x08] = NeanderInstruction.Sta;
-    b[0x09] = 0x84;
-    b[0x0a] = NeanderInstruction.Hlt;
-    b[0x80] = 0x02;
-    b[0x81] = 0x04;
-    b[0x82] = 0x08;
-    b[0x83] = 0x10;
-    b[0x84] = 0x00;
-    return b;
+    return new Uint8Array(currentSample.bytes);
   }
 
   const tweaks = createTweaksStore('neander');
@@ -293,6 +280,13 @@
     lastRead = null;
     lastWrite = null;
   }
+
+  function onLoadSampleById(id: string): void {
+    const found = SAMPLES.find((s) => s.id === id);
+    if (!found) return;
+    currentSample = found;
+    doReset();
+  }
 </script>
 
 <Chassis
@@ -398,7 +392,10 @@
   {onMemLoad}
   onReset={doFullReset}
   onLoadSample={doReset}
-  sampleLabel="RELOAD SUM DEMO"
+  sampleLabel="RELOAD SAMPLE"
+  samples={SAMPLES}
+  currentSampleId={currentSample.id}
+  {onLoadSampleById}
 />
 
 <style>

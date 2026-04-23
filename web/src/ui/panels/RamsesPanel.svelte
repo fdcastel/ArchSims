@@ -12,7 +12,8 @@
     ramsesStep,
     type RamsesCpu,
   } from '../../core/ramses';
-  import { assembleProgram } from '../../assemblers/ramses';
+  import { SAMPLES_BY_MACHINE } from '../../samples';
+  import type { Sample } from '../../samples/types';
   import { createCpuStore } from '../../stores/cpu';
   import { createTweaksStore } from '../../stores/tweaks';
   import Chassis from '../chassis/Chassis.svelte';
@@ -30,37 +31,20 @@
   import { createRunLoop } from './run-loop';
   import type { BitGroup, DisasmItem, FlagSpec, OperandRow } from './types';
 
-  const BITSHIFT_SOURCE = `:StartRA
-\tLDR A #128
-:RepeatRA
-\tSHR A
-\tJZ :StartRB
-\tJMP :RepeatRA
-:StartRB
-\tLDR B #128
-:RepeatRB
-\tSHR B
-\tJZ :StartRX
-\tJMP :RepeatRB
-:StartRX
-\tLDR X #128
-:RepeatRX
-\tSHR X
-\tJZ :Finish
-\tJMP :RepeatRX
+  const SAMPLES = SAMPLES_BY_MACHINE.ramses;
+  let currentSample = $state<Sample>(SAMPLES[0] as Sample);
 
-:Finish
-\tHLT`;
-
-  const sample = assembleProgram(BITSHIFT_SOURCE);
-  // Build per-address label lookup: walk through labels map → addr → name.
-  const addrToLabel = new Map<number, string>();
-  for (const [name, addr] of sample.labels) {
-    if (!addrToLabel.has(addr)) addrToLabel.set(addr, name);
-  }
+  const addrToLabel = $derived.by<Map<number, string>>(() => {
+    const m = new Map<number, string>();
+    if (!currentSample.labels) return m;
+    for (const [name, addr] of currentSample.labels) {
+      if (!m.has(addr)) m.set(addr, name);
+    }
+    return m;
+  });
 
   function sampleBytes(): Uint8Array {
-    return new Uint8Array(sample.bytes);
+    return new Uint8Array(currentSample.bytes);
   }
 
   const tweaks = createTweaksStore('ramses');
@@ -357,6 +341,13 @@
     lastWrite = null;
   }
 
+  function onLoadSampleById(id: string): void {
+    const found = SAMPLES.find((s) => s.id === id);
+    if (!found) return;
+    currentSample = found;
+    doReset();
+  }
+
   const activeReg = $derived<number>(regUsed(irInstr) ? irReg : -1);
 </script>
 
@@ -475,17 +466,19 @@
         addrDigits={2}
         breakpoints={breakpoints}
         onToggleBreakpoint={toggleBreakpoint}
-        title="DISASSEMBLY · BITSHIFT.RAMSES"
+        title={`DISASSEMBLY · ${currentSample.name.toUpperCase()}`}
       />
-      <SourceView
-        source={BITSHIFT_SOURCE}
-        addrToLine={sample.addrToLine}
-        pc={regs.programCounter}
-        irAddr={irStart}
-        breakpoints={breakpoints}
-        onToggleBreakpoint={toggleBreakpoint}
-        title="SOURCE · BITSHIFT.RAMSES"
-      />
+      {#if currentSample.sourceText && currentSample.addrToLine}
+        <SourceView
+          source={currentSample.sourceText}
+          addrToLine={currentSample.addrToLine as Map<number, number>}
+          pc={regs.programCounter}
+          irAddr={irStart}
+          breakpoints={breakpoints}
+          onToggleBreakpoint={toggleBreakpoint}
+          title={`SOURCE · ${currentSample.name.toUpperCase()}`}
+        />
+      {/if}
     </section>
   </div>
 </Chassis>
@@ -499,7 +492,10 @@
   {onMemLoad}
   onReset={doFullReset}
   onLoadSample={doReset}
-  sampleLabel="RELOAD BITSHIFT"
+  sampleLabel="RELOAD SAMPLE"
+  samples={SAMPLES}
+  currentSampleId={currentSample.id}
+  {onLoadSampleById}
 />
 
 <style>

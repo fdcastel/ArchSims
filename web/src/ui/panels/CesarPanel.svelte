@@ -15,7 +15,8 @@
     type CesarCpu,
   } from '../../core/cesar';
   import { memoryWriteByte } from '../../core/memory';
-  import { assembleProgram } from '../../assemblers/cesar';
+  import { SAMPLES_BY_MACHINE } from '../../samples';
+  import type { Sample } from '../../samples/types';
   import { createCpuStore } from '../../stores/cpu';
   import { createTweaksStore } from '../../stores/tweaks';
   import Chassis from '../chassis/Chassis.svelte';
@@ -36,29 +37,20 @@
   import { createRunLoop } from './run-loop';
   import type { BitGroup, DisasmItem, FlagSpec, OperandRow } from './types';
 
-  const BITSHIFT_SOURCE = `:Start
-\tMOV #32768, R0
-:Loop
-\tROR R0
-\tBNE :Loop
+  const SAMPLES = SAMPLES_BY_MACHINE.cesar;
+  let currentSample = $state<Sample>(SAMPLES[0] as Sample);
 
-\tROR R1           ; Advances carry to next register
-\tINC 4            ; self-modifying code
-\tINC 8
-
-\tBR :Loop
-@32774
-\tHLT
-`;
-
-  const sample = assembleProgram(BITSHIFT_SOURCE);
-  const addrToLabel = new Map<number, string>();
-  for (const [name, addr] of sample.labels) {
-    if (!addrToLabel.has(addr)) addrToLabel.set(addr, name);
-  }
+  const addrToLabel = $derived.by<Map<number, string>>(() => {
+    const m = new Map<number, string>();
+    if (!currentSample.labels) return m;
+    for (const [name, addr] of currentSample.labels) {
+      if (!m.has(addr)) m.set(addr, name);
+    }
+    return m;
+  });
 
   function sampleBytes(): Uint8Array {
-    return new Uint8Array(sample.bytes);
+    return new Uint8Array(currentSample.bytes);
   }
 
   const tweaks = createTweaksStore('cesar');
@@ -413,6 +405,13 @@
     lastWrite = null;
   }
 
+  function onLoadSampleById(id: string): void {
+    const found = SAMPLES.find((s) => s.id === id);
+    if (!found) return;
+    currentSample = found;
+    doReset();
+  }
+
   // Active register for highlighting: SRC and TGT operand registers + any implicit R.
   const activeRegs = $derived(() => {
     const s = new Set<number>();
@@ -595,7 +594,7 @@
         addrDigits={4}
         breakpoints={breakpoints}
         onToggleBreakpoint={toggleBreakpoint}
-        title="DISASSEMBLY · BITSHIFT.CESAR"
+        title={`DISASSEMBLY · ${currentSample.name.toUpperCase()}`}
       />
 
       <StackPanel
@@ -606,15 +605,17 @@
         accent={accentAll}
       />
 
-      <SourceView
-        source={BITSHIFT_SOURCE}
-        addrToLine={sample.addrToLine}
-        pc={pc}
-        irAddr={irStart}
-        breakpoints={breakpoints}
-        onToggleBreakpoint={toggleBreakpoint}
-        title="SOURCE · BITSHIFT.CESAR"
-      />
+      {#if currentSample.sourceText && currentSample.addrToLine}
+        <SourceView
+          source={currentSample.sourceText}
+          addrToLine={currentSample.addrToLine as Map<number, number>}
+          pc={pc}
+          irAddr={irStart}
+          breakpoints={breakpoints}
+          onToggleBreakpoint={toggleBreakpoint}
+          title={`SOURCE · ${currentSample.name.toUpperCase()}`}
+        />
+      {/if}
     </section>
   </div>
 </Chassis>
@@ -628,7 +629,10 @@
   {onMemLoad}
   onReset={doFullReset}
   onLoadSample={doReset}
-  sampleLabel="RELOAD BITSHIFT"
+  sampleLabel="RELOAD SAMPLE"
+  samples={SAMPLES}
+  currentSampleId={currentSample.id}
+  {onLoadSampleById}
 />
 
 <style>

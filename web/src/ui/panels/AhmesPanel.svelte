@@ -8,6 +8,8 @@
     type AhmesCategory,
     type AhmesCpu,
   } from '../../core/ahmes';
+  import { SAMPLES_BY_MACHINE } from '../../samples';
+  import type { Sample } from '../../samples/types';
   import { createCpuStore } from '../../stores/cpu';
   import { createTweaksStore } from '../../stores/tweaks';
   import Chassis from '../chassis/Chassis.svelte';
@@ -24,26 +26,11 @@
   import { createRunLoop } from './run-loop';
   import type { BitGroup, DisasmItem, FlagSpec, OperandRow } from './types';
 
-  // Showcase the new Ahmes instructions: SUB, shifts/rotates, extended jumps.
+  const SAMPLES = SAMPLES_BY_MACHINE.ahmes;
+  let currentSample = $state<Sample>(SAMPLES[0] as Sample);
+
   function sampleBytes(): Uint8Array {
-    const b = new Uint8Array(256);
-    // Compute 80 - 30 = 50, then SHR, then ROR-with-carry.
-    b[0x00] = AhmesInstruction.Lda;
-    b[0x01] = 0x80;
-    b[0x02] = AhmesInstruction.Sub;
-    b[0x03] = 0x81;
-    b[0x04] = AhmesInstruction.Sta;
-    b[0x05] = 0x82;
-    b[0x06] = AhmesInstruction.Shr;
-    b[0x07] = AhmesInstruction.Ror;
-    b[0x08] = AhmesInstruction.Sta;
-    b[0x09] = 0x83;
-    b[0x0a] = AhmesInstruction.Hlt;
-    b[0x80] = 0x50; // 80
-    b[0x81] = 0x1e; // 30
-    b[0x82] = 0x00;
-    b[0x83] = 0x00;
-    return b;
+    return new Uint8Array(currentSample.bytes);
   }
 
   const tweaks = createTweaksStore('ahmes');
@@ -326,6 +313,13 @@
     lastRead = null;
     lastWrite = null;
   }
+
+  function onLoadSampleById(id: string): void {
+    const found = SAMPLES.find((s) => s.id === id);
+    if (!found) return;
+    currentSample = found;
+    doReset();
+  }
 </script>
 
 <Chassis
@@ -428,7 +422,10 @@
   {onMemLoad}
   onReset={doFullReset}
   onLoadSample={doReset}
-  sampleLabel="RELOAD SUB+SHIFT DEMO"
+  sampleLabel="RELOAD SAMPLE"
+  samples={SAMPLES}
+  currentSampleId={currentSample.id}
+  {onLoadSampleById}
 />
 
 <style>
