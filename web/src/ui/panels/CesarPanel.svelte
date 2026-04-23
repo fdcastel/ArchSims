@@ -642,9 +642,6 @@
     gap: 14px;
     align-items: start;
   }
-  :global(.chassis.frame-mobile) .panel-grid {
-    grid-template-columns: 1fr;
-  }
   .col {
     display: flex;
     flex-direction: column;

@@ -42,8 +42,6 @@
   class:chassis-paper={$tweaks.palette === 'paper'}
   class:density-comfortable={$tweaks.density === 'comfortable'}
   class:density-compact={$tweaks.density === 'compact'}
-  class:frame-desktop={$tweaks.frame === 'desktop'}
-  class:frame-mobile={$tweaks.frame === 'mobile'}
   class:ann-on={$tweaks.showAnnotations}
   class:ann-off={!$tweaks.showAnnotations}
 >

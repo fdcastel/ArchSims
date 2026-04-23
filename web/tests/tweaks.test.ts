@@ -60,7 +60,6 @@ describe('tweaksStore', () => {
       base: 'bin',
       density: 'comfortable',
       showAnnotations: false,
-      frame: 'mobile',
       showFetchCycle: true,
     };
     storage.setItem('cesar.tweaks', JSON.stringify(persisted));
@@ -70,13 +69,20 @@ describe('tweaksStore', () => {
   });
 
   it('merges partial persisted values over defaults (forward compatible)', () => {
-    storage.setItem('ahmes.tweaks', JSON.stringify({ palette: 'amber', frame: 'mobile' }));
+    storage.setItem('ahmes.tweaks', JSON.stringify({ palette: 'amber', base: 'bin' }));
     const store = createTweaksStore('ahmes');
     expect(get(store)).toEqual({
       ...TWEAKS_DEFAULTS,
       palette: 'amber',
-      frame: 'mobile',
+      base: 'bin',
     });
+  });
+
+  it('silently drops unknown persisted keys (removed fields survive rollout)', () => {
+    storage.setItem('ramses.tweaks', JSON.stringify({ palette: 'amber', frame: 'mobile' }));
+    const store = createTweaksStore('ramses');
+    expect(get(store)).toEqual({ ...TWEAKS_DEFAULTS, palette: 'amber' });
+    expect((get(store) as unknown as { frame?: unknown }).frame).toBeUndefined();
   });
 
   it('falls back to defaults when the persisted value is malformed', () => {
@@ -102,7 +108,7 @@ describe('tweaksStore', () => {
 
   it('.reset restores defaults and persists them', () => {
     const store = createTweaksStore('cesar');
-    store.patch({ palette: 'paper', frame: 'mobile' });
+    store.patch({ palette: 'paper', showAnnotations: false });
     store.reset();
     expect(get(store)).toEqual(TWEAKS_DEFAULTS);
     expect(JSON.parse(storage.getItem('cesar.tweaks') ?? '{}')).toEqual(TWEAKS_DEFAULTS);
@@ -115,7 +121,6 @@ describe('tweaksStore', () => {
       base: 'dec',
       density: 'compact',
       showAnnotations: false,
-      frame: 'mobile',
       showFetchCycle: false,
     };
     store.set(next);

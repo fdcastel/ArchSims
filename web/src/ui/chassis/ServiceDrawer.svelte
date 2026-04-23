@@ -113,10 +113,6 @@
     { v: 'comfortable', label: 'Comfy' },
     { v: 'compact', label: 'Compact' },
   ];
-  const frameOptions: SegOpt<'desktop' | 'mobile'>[] = [
-    { v: 'desktop', label: 'Desktop' },
-    { v: 'mobile', label: 'Mobile' },
-  ];
   const annotationOptions: SegOpt<'on' | 'off'>[] = [
     { v: 'on', label: 'On' },
     { v: 'off', label: 'Off' },
@@ -182,22 +178,6 @@
         <div class="sd-seg">
           {#each densityOptions as o (o.v)}
             <button type="button" class="sd-seg-btn" class:sd-on={$tweaks.density === o.v} onclick={() => tweaks.patch({ density: o.v })}>
-              <span>{o.label}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-    </div>
-
-    <div class="sd-row">
-      <div class="sd-row-meta">
-        <div class="sd-row-label">Frame</div>
-        <div class="sd-row-hint">Desktop console or mobile handheld</div>
-      </div>
-      <div class="sd-row-ctrls">
-        <div class="sd-seg">
-          {#each frameOptions as o (o.v)}
-            <button type="button" class="sd-seg-btn" class:sd-on={$tweaks.frame === o.v} onclick={() => tweaks.patch({ frame: o.v })}>
               <span>{o.label}</span>
             </button>
           {/each}

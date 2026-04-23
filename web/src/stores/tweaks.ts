@@ -3,14 +3,12 @@ import { writable, type Writable } from 'svelte/store';
 export type Palette = 'amber' | 'green' | 'paper';
 export type Base = 'hex' | 'dec' | 'bin';
 export type Density = 'comfortable' | 'compact';
-export type Frame = 'desktop' | 'mobile';
 
 export interface Tweaks {
   palette: Palette;
   base: Base;
   density: Density;
   showAnnotations: boolean;
-  frame: Frame;
   /** Show fetch/decode/execute/flags sub-step animator (P4-06). */
   showFetchCycle: boolean;
 }
@@ -22,7 +20,6 @@ export const TWEAKS_DEFAULTS: Tweaks = {
   base: 'hex',
   density: 'compact',
   showAnnotations: true,
-  frame: 'desktop',
   showFetchCycle: false,
 };
 
@@ -33,8 +30,12 @@ function readFromStorage(machine: Machine): Tweaks | null {
   try {
     const raw = localStorage.getItem(tweaksStorageKey(machine));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<Tweaks>;
-    return { ...TWEAKS_DEFAULTS, ...parsed };
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const result = { ...TWEAKS_DEFAULTS };
+    for (const key of Object.keys(TWEAKS_DEFAULTS) as (keyof Tweaks)[]) {
+      if (key in parsed) (result as Record<string, unknown>)[key] = parsed[key];
+    }
+    return result;
   } catch {
     return null;
   }
