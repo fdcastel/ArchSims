@@ -117,4 +117,10 @@
     color: var(--silk-dim);
     font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
   }
+
+  @media (max-width: 640px) {
+    .stack-row {
+      grid-template-columns: 36px 36px 1fr;
+    }
+  }
 </style>

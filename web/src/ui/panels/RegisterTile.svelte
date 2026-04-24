@@ -103,4 +103,14 @@
     letter-spacing: 0.18em;
     color: var(--silk-dim);
   }
+
+  @media (max-width: 640px) {
+    .reg-tile {
+      padding: 8px 8px;
+    }
+    .reg-sub-row {
+      flex-direction: column;
+      gap: 4px;
+    }
+  }
 </style>

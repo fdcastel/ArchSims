@@ -83,6 +83,10 @@ body.chassis-paper {
   background: #c9bd9e;
 }
 
+.chassis {
+  overflow-x: clip;
+}
+
 button {
   font-family: inherit;
   color: inherit;

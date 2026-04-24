@@ -657,6 +657,16 @@
     grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 6px;
   }
+  @media (max-width: 1024px) {
+    .panel-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 640px) {
+    .tiles-cesar {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
   .mem-and-arrow {
     position: relative;
   }

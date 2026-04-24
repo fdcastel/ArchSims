@@ -505,6 +505,11 @@
     gap: 14px;
     align-items: start;
   }
+  @media (max-width: 1024px) {
+    .panel-grid {
+      grid-template-columns: 1fr;
+    }
+  }
   .col {
     display: flex;
     flex-direction: column;

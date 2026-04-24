@@ -56,6 +56,17 @@
     letter-spacing: 0.14em;
   }
 
+  @media (max-width: 640px) {
+    .seg-xl {
+      font-size: 28px;
+      letter-spacing: 0.08em;
+    }
+    .seg-sm {
+      font-size: 9px;
+      letter-spacing: 0.05em;
+    }
+  }
+
   .seg-ink {
     color: var(--phosphor);
     text-shadow: none;

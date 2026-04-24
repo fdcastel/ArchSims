@@ -180,6 +180,22 @@
     border-radius: 4px;
   }
 
+  @media (max-width: 640px) {
+    .chassis-head-right {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .serial {
+      font-size: 9px;
+      padding: 2px 6px;
+      letter-spacing: 0.14em;
+    }
+    .chassis-title {
+      font-size: 18px;
+      letter-spacing: 0.25em;
+    }
+  }
+
   .chassis-main {
     display: block;
   }
