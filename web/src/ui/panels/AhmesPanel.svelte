@@ -171,7 +171,13 @@
   // --- Derived data ----------------------------------------------------------
 
   const cpu = $derived($cpuStore.cpu);
-  const regs = $derived(cpu.registers);
+  // Re-alloc registers + flags on every tick so Svelte $derived propagates.
+  // See P8-02 note in NeanderPanel.svelte.
+  const regs = $derived.by(() => {
+    void $cpuStore.tick;
+    const r = cpu.registers;
+    return { ...r, flags: { ...r.flags }, instructionRegister: { ...r.instructionRegister } };
+  });
   const ir = $derived(regs.instructionRegister);
   const irOp = $derived(ir.opCode);
   const irHigh = $derived((irOp & 0xf0) >>> 4);

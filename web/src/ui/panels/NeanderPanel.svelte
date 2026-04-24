@@ -162,7 +162,15 @@
   // --- Derived data for panels ------------------------------------------------
 
   const cpu = $derived($cpuStore.cpu);
-  const regs = $derived(cpu.registers);
+  // Re-alloc registers + flags on every tick so Svelte $derived propagates.
+  // The core mutates cpu.registers in place; without a fresh ref, $derived
+  // short-circuits on Object.is and downstream bindings (halted, flags, etc.)
+  // stay stale after reset. See P8-02.
+  const regs = $derived.by(() => {
+    void $cpuStore.tick;
+    const r = cpu.registers;
+    return { ...r, flags: { ...r.flags }, instructionRegister: { ...r.instructionRegister } };
+  });
   const ir = $derived(regs.instructionRegister);
   const irOp = $derived(ir.opCode);
   const irHigh = $derived((irOp & 0xf0) >>> 4);
