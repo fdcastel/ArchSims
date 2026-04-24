@@ -22,3 +22,6 @@ web/node_modules
 web/dist
 web/.astro
 web/.wrangler
+web/test-results
+web/playwright-report
+web/blob-report
