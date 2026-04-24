@@ -28,6 +28,10 @@
   );
   const dec = $derived(String(masked).padStart(width === 16 ? 5 : 3, '0'));
   const bin = $derived(masked.toString(2).padStart(width, '0'));
+  const signedVal = $derived(
+    width === 16 && masked >= 0x8000 ? masked - 0x10000 : masked,
+  );
+  const signed = $derived(String(signedVal).padStart(width === 16 ? 6 : 4, ' '));
 </script>
 
 <div class="reg-tile" class:reg-active={active}>
@@ -46,8 +50,13 @@
       <Segmented text={dec} size="sm" color="dim" />
     </div>
     <div class="reg-sub">
-      <span class="reg-sub-key">BIN</span>
-      <Segmented text={bin} size="sm" color="dim" />
+      {#if width === 16}
+        <span class="reg-sub-key">±</span>
+        <Segmented text={signed} size="sm" color="dim" />
+      {:else}
+        <span class="reg-sub-key">BIN</span>
+        <Segmented text={bin} size="sm" color="dim" />
+      {/if}
     </div>
   </div>
 </div>
@@ -60,6 +69,8 @@
     padding: 10px 12px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     transition: border-color 160ms ease;
+    min-width: 0;
+    overflow: hidden;
   }
   .reg-tile.reg-active {
     border-color: var(--accent);

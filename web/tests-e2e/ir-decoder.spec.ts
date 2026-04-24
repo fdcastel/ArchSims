@@ -66,7 +66,7 @@ test.describe('IR Decoder panel', () => {
     expect(labels.length, 'Ramses IR has multiple bit groups').toBeGreaterThan(1);
   });
 
-  test.fixme('IR decoder reserves a minimum height so Controls don\'t jump (pending BUG-4, P7-04)', async ({ page }) => {
+  test('IR decoder reserves a minimum height so Controls don\'t jump (regression: BUG-4, P7-04)', async ({ page }) => {
     await page.goto('/cesar');
     await loadDefaultSample(page);
 

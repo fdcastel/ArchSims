@@ -64,7 +64,7 @@
   let running = $state(false);
   let serviceOpen = $state(false);
   let speed = $state(10);
-  const breakpoints = $state(new Set<number>());
+  let breakpoints = $state(new Set<number>());
   let hoveredAddr: number | null = $state(null);
   let lastRead: number | null = $state(null);
   let lastWrite: number | null = $state(null);
@@ -152,10 +152,10 @@
   });
 
   function toggleBreakpoint(addr: number): void {
-    if (breakpoints.has(addr)) breakpoints.delete(addr);
-    else breakpoints.add(addr);
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    breakpoints.size;
+    const next = new Set(breakpoints);
+    if (next.has(addr)) next.delete(addr);
+    else next.add(addr);
+    breakpoints = next;
   }
 
   function onKeyboardSubmit(byte: number): void {
@@ -371,8 +371,15 @@
   const disasm = $derived<DisasmItem[]>(() => {
     const items: DisasmItem[] = [];
     const bytes = cpu.memory.data;
-    // Walk a window of 96 bytes starting at (irStart & ~0x0F) so the caret is visible.
-    const windowStart = Math.max(0, (irStart - 16) & 0xfff0);
+    // Walk a window of 96 bytes around the PC so the PC caret is always visible.
+    // P7-08 / BUG-8: previously we centered on irStart; at initial load irSize
+    // is 1 (a dummy IR) and irStart computes to 0xFFFF, pushing the window into
+    // high memory even though PC=0. Center on PC instead — that's the row the
+    // student is about to execute. Also clamp the raw offset arithmetically;
+    // `& 0xfff0` alone wraps negatives back to the top of memory.
+    const center = pc;
+    const rawStart = center - 16;
+    const windowStart = rawStart <= 0 ? 0 : rawStart & 0xfff0;
     let addr = windowStart;
     let safety = 0;
     while (addr < windowStart + 96 && addr < 65536 && safety < 96) {
@@ -514,6 +521,7 @@
         {groups}
         operands={operands()}
         accent={accentAll}
+        minRows={4}
       />
 
       <Controls
@@ -592,6 +600,7 @@
       <DisplayPanel
         bytes={cpu.memory.data}
         lastWrite={lastWrite}
+        tick={$cpuStore.tick}
       />
 
       <KeyboardInput onSubmit={onKeyboardSubmit} />
@@ -661,11 +670,11 @@
   }
   .tiles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
   }
   .tiles-cesar {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
   @media (max-width: 1024px) {

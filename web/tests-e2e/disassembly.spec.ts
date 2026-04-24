@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 // P9-03 — Disassembly panel wiring: PC caret tracks the program counter,
 // clicking rows invokes the breakpoint toggle, Enter/Space activate rows
-// via keyboard. Breakpoint-dot assertion is skipped pending P7-06 fix.
+// via keyboard, and the ● dot reflects the breakpoint set (regression
+// guard for BUG-6 / P7-06 and BUG-8 / P7-08).
 
 async function loadDefaultSample(page: Page): Promise<void> {
   await page.getByRole('button', { name: /SERVICE PANEL/ }).first().click();
@@ -71,7 +72,7 @@ test.describe('Disassembly panel', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test.fixme('clicking a row toggles the ● breakpoint indicator (pending BUG-6 fix, P7-06)', async ({ page }) => {
+  test('clicking a row toggles the ● breakpoint indicator (regression: BUG-6, P7-06)', async ({ page }) => {
     await page.goto('/neander');
     const rows = page.locator('.disasm-row');
     const dotsBefore = await page.locator('.disasm-bp-dot').count();
@@ -94,10 +95,8 @@ test.describe('Disassembly panel', () => {
     }
   });
 
-  test('8-bit machines show a PC marker on initial load', async ({ page }) => {
-    // Cesar is excluded pending BUG-8 (windowStart computation fails for
-    // small PC values, so PC=0 falls outside the visible window at load).
-    for (const m of ['neander', 'ahmes', 'ramses'] as const) {
+  test('every machine shows a PC marker on initial load (regression: BUG-8, P7-08)', async ({ page }) => {
+    for (const m of ['neander', 'ahmes', 'ramses', 'cesar'] as const) {
       await page.goto('/' + m);
       await expect(page.locator('.disasm-row.disasm-pc'), `${m} has PC marker`).toHaveCount(1);
     }

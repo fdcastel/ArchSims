@@ -151,7 +151,7 @@ test.describe('Service Drawer — tweaks wiring', () => {
     await expect(drawer).not.toHaveClass(/sd-open/);
   });
 
-  test.fixme('Escape key closes the drawer (keydown handler is on backdrop div, not autofocused)', async ({ page }) => {
+  test('Escape key closes the drawer (regression: BUG-7, P7-07)', async ({ page }) => {
     await page.goto('/neander');
     const drawer = page.locator('aside.service-drawer');
     await openDrawer(page);

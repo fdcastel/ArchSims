@@ -64,6 +64,21 @@
     onClose?.();
   };
 
+  // P7-07 / BUG-7: Escape must close the drawer from anywhere, not just
+  // when the backdrop happens to have focus. Attach a window-level keydown
+  // listener while open and tear it down on close.
+  $effect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   function handleSave(): void {
     const bytes = memData();
     const file = writeMemFile(memKind, bytes);

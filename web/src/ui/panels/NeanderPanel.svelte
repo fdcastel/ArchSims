@@ -42,7 +42,7 @@
   let running = $state(false);
   let serviceOpen = $state(false);
   let speed = $state(10);
-  const breakpoints = $state(new Set<number>());
+  let breakpoints = $state(new Set<number>());
   let hoveredAddr: number | null = $state(null);
   let lastRead: number | null = $state(null);
   let lastWrite: number | null = $state(null);
@@ -152,11 +152,10 @@
   });
 
   function toggleBreakpoint(addr: number): void {
-    if (breakpoints.has(addr)) breakpoints.delete(addr);
-    else breakpoints.add(addr);
-    // Trigger reactivity by reassigning (Sets aren't deep-tracked in runes).
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    breakpoints.size;
+    const next = new Set(breakpoints);
+    if (next.has(addr)) next.delete(addr);
+    else next.add(addr);
+    breakpoints = next;
   }
 
   // --- Derived data for panels ------------------------------------------------
@@ -331,6 +330,7 @@
         {groups}
         operands={operands}
         accent={accentAll}
+        minRows={2}
       />
 
       {#if $tweaks.showAnnotations}
@@ -426,7 +426,7 @@
   }
   .tiles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
   }
   .annot {

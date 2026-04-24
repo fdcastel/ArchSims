@@ -12,6 +12,12 @@
     /** Highlight the cell most recently written by the CPU, if in range. */
     lastWrite?: number | null;
     title?: string;
+    /**
+     * Reactivity token: caller bumps this on every CPU tick so the cell
+     * derivation re-runs even when `bytes` is the same Uint8Array ref (the
+     * core mutates in place). See P7-09 / BUG-9.
+     */
+    tick?: number;
   }
 
   let {
@@ -20,6 +26,7 @@
     start = CesarDisplayMemoryAddress,
     lastWrite = null,
     title = 'DISPLAY',
+    tick = 0,
   }: Props = $props();
 
   function renderChar(v: number): string {
@@ -28,13 +35,16 @@
     return String.fromCharCode(v);
   }
 
-  const cells = $derived<Array<{ addr: number; byte: number; ch: string }>>(
-    Array.from({ length }, (_, i) => {
+  const cells = $derived.by<Array<{ addr: number; byte: number; ch: string }>>(() => {
+    // The caller must pass a fresh `bytes` ref on each CPU tick (see
+    // P7-09 / BUG-9); `tick` is accepted too as a belt-and-suspenders dep.
+    const _tick = tick; // eslint-disable-line @typescript-eslint/no-unused-vars
+    return Array.from({ length }, (_, i) => {
       const addr = start + i;
       const byte = bytes[addr] ?? 0;
       return { addr, byte, ch: renderChar(byte) };
-    }),
-  );
+    });
+  });
 
   const highlightIdx = $derived(
     lastWrite !== null && lastWrite >= start && lastWrite < start + length

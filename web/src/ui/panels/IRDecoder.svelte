@@ -9,6 +9,7 @@
     groups: BitGroup[];
     operands: OperandRow[];
     accent?: 'amber' | 'green' | 'ink';
+    minRows?: number;
   }
 
   let {
@@ -17,7 +18,11 @@
     groups,
     operands,
     accent = 'amber',
+    minRows = 0,
   }: Props = $props();
+
+  const fillerCount = $derived(Math.max(0, minRows - operands.length));
+  const fillers = $derived(Array.from({ length: fillerCount }, (_, i) => i));
 
   const addrText = $derived(
     addr.toString(16).toUpperCase().padStart(addrDigits, '0'),
@@ -57,7 +62,7 @@
     {/each}
   </div>
 
-  <div class="ir-operand">
+  <div class="ir-operand" data-testid="ir-operand">
     {#each operands as row (row.key)}
       <div class="ir-operand-row">
         <span class="ir-operand-key">{row.key}</span>
@@ -65,6 +70,12 @@
         {#if row.hint}
           <span class="ir-operand-bin">{row.hint}</span>
         {/if}
+      </div>
+    {/each}
+    {#each fillers as i (`filler-${i}`)}
+      <div class="ir-operand-row ir-operand-filler" aria-hidden="true">
+        <span class="ir-operand-key">—</span>
+        <Segmented text={'0'} size="md" color={accent} />
       </div>
     {/each}
   </div>
@@ -97,6 +108,7 @@
     display: flex;
     align-items: flex-end;
     gap: 6px;
+    min-height: 64px;
   }
   .ir-group {
     display: flex;
@@ -104,6 +116,7 @@
     align-items: center;
     gap: 4px;
     flex: 1;
+    min-width: 0;
   }
   .ir-group-label {
     font-size: 9px;
@@ -168,6 +181,11 @@
     font-weight: 700;
     letter-spacing: 0.14em;
     color: var(--silk);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.2;
   }
   .ir-sep {
     width: 1px;
@@ -197,5 +215,8 @@
     letter-spacing: 0.12em;
     font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
     text-align: right;
+  }
+  .ir-operand-filler {
+    visibility: hidden;
   }
 </style>

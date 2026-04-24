@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
 // P9-02 — Register tiles render values correctly and react to CPU state.
-// RegisterTile always shows HEX (prominent) + DEC + BIN side-by-side; the
-// Memory-base tweak only affects the memory grid, not these tiles.
+// 8-bit tiles show HEX (prominent) + DEC + BIN; 16-bit tiles show HEX + DEC
+// + signed decimal (BIN would overflow the narrow Cesar register column —
+// see P7-05 / BUG-5). The Memory-base tweak only affects the memory grid.
 
 async function loadDefaultSample(page: Page): Promise<void> {
   await page.getByRole('button', { name: /SERVICE PANEL/ }).first().click();
@@ -73,21 +74,19 @@ test.describe('Register tiles', () => {
     expect(activeCounts.some((c) => c > 0), 'at least one step highlights an active reg').toBe(true);
   });
 
-  test('Cesar renders 8 register tiles (R0..R7) and they are 16-bit', async ({ page }) => {
+  test('Cesar renders 8 register tiles (R0..R7) with 16-bit HEX + DEC + signed', async ({ page }) => {
     await page.goto('/cesar');
     const tiles = page.locator('.reg-tile');
     await expect(tiles).toHaveCount(8);
 
-    // 16-bit means HEX is 4 chars ("0000") and BIN is 16 chars.
+    // 16-bit means HEX is 4 chars ("0000"); BIN is dropped in favour of a
+    // signed decimal column so the tile fits its narrow grid track.
     const firstTile = tiles.first();
     await expect(firstTile).toContainText('R0');
     await expect(firstTile).toContainText('0000');
-    // 16-bit BIN has 16 zero-chars — Segmented renders one per <span> so
-    // innerText inserts whitespace; count digit characters instead.
-    const text = await firstTile.innerText();
-    const binRow = text.split('BIN')[1] ?? '';
-    const zeros = (binRow.match(/0/g) ?? []).length;
-    expect(zeros, 'Cesar R0 BIN row has ≥16 zero digits').toBeGreaterThanOrEqual(16);
+    await expect(firstTile).toContainText('DEC');
+    await expect(firstTile).toContainText('±');
+    await expect(firstTile).not.toContainText('BIN');
   });
 
   test('R7 on Cesar (PC) updates with each STEP', async ({ page }) => {

@@ -82,15 +82,30 @@ test.describe('Cesar I/O panels', () => {
     await expect(disp.locator('.disp-cell')).toHaveCount(36);
   });
 
-  test.fixme('loading Hello.Cesar + RUN writes "HELLO" to the display panel (pending BUG-9, P7-09)', async ({ page }) => {
+  test('loading Hello.Cesar + RUN writes "HELLO" to the display panel (regression: BUG-9, P7-09)', async ({ page }) => {
     await page.goto('/cesar');
     await loadHelloSample(page);
     await page.getByRole('button', { name: /^MAX$/ }).click();
     await page.getByRole('button', { name: /RUN\s+CONTINUOUS/ }).click();
-    await expect(page.locator('body')).toContainText(/halt/i, { timeout: 5000 });
 
+    // Wait for the chassis HLT lamp to actually light — the flag-bank HLT
+    // sublabel text is always present in the DOM, so text-matching on "halt"
+    // is not a reliable halt signal.
+    const hltLampWrap = page
+      .locator('.chassis-head-right .lamp-wrap')
+      .filter({ hasText: 'HLT' });
+    await expect(
+      hltLampWrap.locator('.lamp.lamp-on'),
+      'HLT lamp lights when Hello.Cesar halts',
+    ).toHaveCount(1, { timeout: 5000 });
+
+    // Each display cell is its own flex box, so innerText inserts a newline
+    // between every char. Strip non-letters to recover the message.
     const dispText = (await page.locator('.disp').innerText()).toUpperCase();
-    expect(dispText, 'display shows HELLO after Hello.Cesar runs').toContain('HELLO');
+    const letters = dispText.replace(/[^A-Z]/g, '');
+    expect(letters, 'display shows HELLO, CESAR! after Hello.Cesar runs').toContain(
+      'HELLOCESAR',
+    );
   });
 
   test('STACK panel is mounted on Cesar (hidden until R6 is written)', async ({ page }) => {
