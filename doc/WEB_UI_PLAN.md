@@ -187,6 +187,33 @@ web/                            ← ALL web code lives here (static site + TS co
 
 ---
 
+## Phase 7 — E2E testing harness (Playwright)
+
+**Goal:** Exercise the running UI in a real browser so bugs like BUG-1 are caught before they ship. AGENTS.md's "Not tested = not working" rule extends to the UI — the existing Vitest suite only covers core logic.
+
+| ID    | Status  | Task | Notes |
+|-------|---------|------|-------|
+| P7-01 | ✅ RESOLVED | `@playwright/test` + Chromium installed, [web/playwright.config.ts](../web/playwright.config.ts) configured with `webServer` auto-start, `pnpm test:e2e` script in [web/package.json](../web/package.json) | Reuses running preview in dev via `reuseExistingServer` |
+| P7-02 | 🔧 IN PROGRESS | Port scratch bug-hunt probes into proper `*.spec.ts`: per-machine front-panel smokes at [web/tests-e2e/smoke.spec.ts](../web/tests-e2e/smoke.spec.ts) | Beachhead landed: STEP/RESET round-trip + sample-load-to-HALT for all 4 machines. Remaining work: ServiceDrawer a11y spec, per-machine sample-loading spec, addressing-mode-arrow animation check |
+| P7-03 | ✅ RESOLVED | Viewport-regression spec at [web/tests-e2e/viewport.spec.ts](../web/tests-e2e/viewport.spec.ts) — 15 tests across 5 pages × 3 viewports (375/768/1440), asserts `scrollWidth ≤ innerWidth` and zero console/page errors | BUG-1 regression guard |
+| P7-04 | ❌ OPEN | A11y smoke: assert ServiceDrawer controls are `aria-hidden` when drawer closed; verify close-button accessible name; Tab order stays within visible region | Closed-drawer controls must not be Tab-focusable |
+| P7-05 | ❌ OPEN | Wire `pnpm test:e2e` into AGENTS.md "Before you finish" checklist and the Phase 6 GitHub Actions workflow (`.github/workflows/web.yml` when it lands) | Gate alongside existing `pnpm -C web test` |
+| P7-06 | ❌ OPEN | Visual-regression screenshots: capture baseline PNGs per machine × viewport under `tests-e2e/__screenshots__/`, fail on pixel diff | Expensive to maintain; land after UI stabilises post-Phase 4 |
+
+---
+
+## Phase 8 — UI bug triage
+
+**Goal:** Record UI bugs found during exploratory testing. New bugs append here as P8-NN.
+
+| ID    | Status  | Task | Notes |
+|-------|---------|------|-------|
+| P8-01 | ✅ RESOLVED | **BUG-1** Mobile/narrow-viewport layout overflow. At ≤1024px the 3-col panel grid plus fixed-width children (`.chassis-head-right`, `.serial`, `.reg-tile`, `.segmented.seg-xl`, `.tiles-cesar`, `.stack-row`) forced horizontal scroll | Fix landed: removed defunct Frame tweak ([web/src/stores/tweaks.ts](../web/src/stores/tweaks.ts), [ServiceDrawer.svelte](../web/src/ui/chassis/ServiceDrawer.svelte), 4 panels), added `@media (max-width: 1024px)` + `@media (max-width: 640px)` rules across panels + [Chassis.svelte](../web/src/ui/chassis/Chassis.svelte) + [Segmented.svelte](../web/src/ui/primitives/Segmented.svelte) + [RegisterTile.svelte](../web/src/ui/panels/RegisterTile.svelte) + [StackPanel.svelte](../web/src/ui/panels/StackPanel.svelte), and `overflow-x: clip` on `.chassis` in [tokens.css](../web/src/styles/tokens.css) as a belt-and-suspenders guard against any off-canvas child. Regression guard in P7-03 |
+| P8-02 | ❌ OPEN | **BUG-2** `RUN CONTINUOUS` button does not flip label to `STOP` when the CPU halts naturally on Neander/Ahmes/Ramses; only `disabled=true` signals the halt state. Toggle works correctly on Cesar Hello sample | Investigate [web/src/ui/panels/Controls.svelte](../web/src/ui/panels/Controls.svelte) + [web/src/ui/panels/run-loop.ts](../web/src/ui/panels/run-loop.ts). Expected: button state reflects `running ∧ ¬halted` |
+| P8-03 | ❌ OPEN | **BUG-3** Base toggle HEX → DEC → BIN → HEX is not idempotent in rendered DOM text — the final HEX view differs from the pre-toggle snapshot | Likely cosmetic (animation frame, `sd-on` class state, or derived `$tweaks.base` subscribers that fire extra times). Reproduce via Playwright; isolate which DOM node differs. Likely in [ServiceDrawer.svelte](../web/src/ui/chassis/ServiceDrawer.svelte) or consumers of `$tweaks.base` |
+
+---
+
 ## Design critique / suggested improvements over the POC
 
 Before anyone starts Phase 4, review these proposed changes against the POC so we don't accidentally re-create limitations:
