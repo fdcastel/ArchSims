@@ -217,6 +217,43 @@ web/                            ← ALL web code lives here (static site + TS co
 
 ---
 
+## Phase 9 — UI component & wiring coverage
+
+**Goal:** Cover the UI surface not exercised by Phase 7's smoke/viewport specs. Vitest already covers the CPU core, assemblers, stores, and format helpers — here we verify that panels render the right DOM, that user controls fire the right callbacks with the right values, and that tweaks propagate to the DOM. Two tiers: Playwright for reactive / stateful paths (Tier 1), `@testing-library/svelte` for pure presentational primitives (Tier 2).
+
+### Tier 1 — Playwright specs (organised by concern)
+
+| ID    | Status  | Task | Notes |
+|-------|---------|------|-------|
+| P9-01 | ❌ OPEN | `service-drawer.spec.ts` — every tweak (palette, base, density, annotations, fetch-cycle) applies to the DOM and persists in localStorage | Biggest current gap: the drawer has ~8 controls, none individually asserted |
+| P9-02 | ❌ OPEN | `registers.spec.ts` — register values update on STEP; active-register highlight follows the PC/operand; base toggle re-renders HEX/DEC/BIN inside tiles | Covers `RegisterTile` + `Segmented` integration |
+| P9-03 | ❌ OPEN | `disassembly.spec.ts` — PC caret moves with STEP; Enter/Space keyboard activation on rows; breakpoint click toggles `●` | Breakpoint assertion uses `test.fixme(...)` pending P7-06 fix |
+| P9-04 | ❌ OPEN | `flag-bank.spec.ts` — each flag lamp reflects its CPU flag across all four machines; HLT lamp lights on halt, clears on reset | |
+| P9-05 | ❌ OPEN | `ir-decoder.spec.ts` — bit-decomposition shows the right opcode/operand bits per instruction | Height-stability assertion uses `test.fixme(...)` pending P7-04 fix |
+| P9-06 | ❌ OPEN | `memory-grid.spec.ts` — PC cell highlighted, IR cell highlighted, READ/WRITE markers appear during STEP, breakpoint cells reflect disasm state | |
+| P9-07 | ❌ OPEN | `cesar-io.spec.ts` — keyboard SEND writes 0xFFDA; Display panel renders memory-mapped chars from 0xFFDA–0xFFFF; Stack panel shows R6+N words | |
+| P9-08 | ❌ OPEN | `samples.spec.ts` — each sample in `SAMPLES_BY_MACHINE` loads, runs to HALT with expected end-state (accumulator/registers/specific memory bytes) | Source of truth = the F# CLI output for the same `.mem` files |
+| P9-09 | ❌ OPEN | `chassis.spec.ts` — palette/density classes propagate to chassis; PWR / RUN / HLT lamps light at the right times; ServiceDrawer open/close transitions + focus behaviour | |
+
+### Tier 2 — `@testing-library/svelte` component tests (pure primitives only)
+
+| ID    | Status  | Task | Notes |
+|-------|---------|------|-------|
+| P9-20 | ❌ OPEN | Add `@testing-library/svelte` + `jsdom` (or `happy-dom`), add `vitest` project for `environment: 'jsdom'` scoped to `tests-unit/` so the existing Node-env Vitest suite stays untouched | ~3 deps; keep Tier 2 opt-in so Tier 1 remains authoritative |
+| P9-21 | ❌ OPEN | `Lamp.test.ts` — `on` prop lights up, `color` prop applies the right class, `label` renders | Pure presentational, no store |
+| P9-22 | ❌ OPEN | `Segmented.test.ts` — chars render one-per-span, `size` + `color` props apply classes, blanks get `seg-blank` | |
+| P9-23 | ❌ OPEN | `PanelButton.test.ts` — `onClick` fires, `disabled` blocks click, `variant` applies colour class, keyboard Enter/Space activation | |
+| P9-24 | ❌ OPEN | `Toggle.test.ts` — on/off prop flips, click emits the callback | |
+| P9-25 | ❌ OPEN | `Etch.test.ts` + `Scanlines.test.ts` — simple presentation-only smoke | Low priority; mostly render-smoke |
+
+### Exit criteria
+
+- Tier 1: every spec landed; `pnpm test:e2e` green on all.
+- Tier 2: all primitives have a component test; `pnpm test` green (new Vitest project runs alongside the existing Node suite).
+- Phase 7 bugs (P7-04, P7-06) get their `test.fixme` guards flipped to active assertions once fixed.
+
+---
+
 ## Design critique / suggested improvements over the POC
 
 Before anyone starts Phase 4, review these proposed changes against the POC so we don't accidentally re-create limitations:
