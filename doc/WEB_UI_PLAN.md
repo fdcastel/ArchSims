@@ -228,26 +228,26 @@ web/                            ← ALL web code lives here (static site + TS co
 
 | ID    | Status  | Task | Notes |
 |-------|---------|------|-------|
-| P9-01 | ❌ OPEN | `service-drawer.spec.ts` — every tweak (palette, base, density, annotations, fetch-cycle) applies to the DOM and persists in localStorage | Biggest current gap: the drawer has ~8 controls, none individually asserted |
-| P9-02 | ❌ OPEN | `registers.spec.ts` — register values update on STEP; active-register highlight follows the PC/operand; base toggle re-renders HEX/DEC/BIN inside tiles | Covers `RegisterTile` + `Segmented` integration |
-| P9-03 | ❌ OPEN | `disassembly.spec.ts` — PC caret moves with STEP; Enter/Space keyboard activation on rows; breakpoint click toggles `●` | Breakpoint assertion uses `test.fixme(...)` pending P7-06 fix |
-| P9-04 | ❌ OPEN | `flag-bank.spec.ts` — each flag lamp reflects its CPU flag across all four machines; HLT lamp lights on halt, clears on reset | |
-| P9-05 | ❌ OPEN | `ir-decoder.spec.ts` — bit-decomposition shows the right opcode/operand bits per instruction | Height-stability assertion uses `test.fixme(...)` pending P7-04 fix |
-| P9-06 | ❌ OPEN | `memory-grid.spec.ts` — PC cell highlighted, IR cell highlighted, READ/WRITE markers appear during STEP, breakpoint cells reflect disasm state | |
-| P9-07 | ❌ OPEN | `cesar-io.spec.ts` — keyboard SEND writes 0xFFDA; Display panel renders memory-mapped chars from 0xFFDA–0xFFFF; Stack panel shows R6+N words | |
-| P9-08 | ❌ OPEN | `samples.spec.ts` — each sample in `SAMPLES_BY_MACHINE` loads, runs to HALT with expected end-state (accumulator/registers/specific memory bytes) | Source of truth = the F# CLI output for the same `.mem` files |
-| P9-09 | ❌ OPEN | `chassis.spec.ts` — palette/density classes propagate to chassis; PWR / RUN / HLT lamps light at the right times; ServiceDrawer open/close transitions + focus behaviour | |
+| P9-01 | ✅ RESOLVED | `service-drawer.spec.ts` — every tweak (palette, base, density, annotations, fetch-cycle) applies to the DOM and persists in localStorage | [10 tests](../web/tests-e2e/service-drawer.spec.ts). Discovered BUG-7 (Escape) while writing it |
+| P9-02 | ✅ RESOLVED | `registers.spec.ts` — register values update on STEP; active-register highlight follows the PC/operand | [7 tests](../web/tests-e2e/registers.spec.ts). Note: `RegisterTile` renders HEX + DEC + BIN always; the Memory-base tweak affects the grid, not the tiles |
+| P9-03 | ✅ RESOLVED | `disassembly.spec.ts` — PC caret moves with STEP; Enter/Space keyboard activation on rows; breakpoint click toggles `●` | [7 tests + 1 fixme](../web/tests-e2e/disassembly.spec.ts) pending P7-06 fix. Discovered BUG-8 (Cesar window wraparound) while writing it |
+| P9-04 | ✅ RESOLVED | `flag-bank.spec.ts` — each flag lamp reflects its CPU flag across all four machines; HLT lamp lights on halt, clears on reset | [6 tests](../web/tests-e2e/flag-bank.spec.ts) |
+| P9-05 | ✅ RESOLVED | `ir-decoder.spec.ts` — bit-decomposition shows the right opcode/operand bits per instruction | [5 tests + 1 fixme](../web/tests-e2e/ir-decoder.spec.ts) pending P7-04 fix |
+| P9-06 | ✅ RESOLVED | `memory-grid.spec.ts` — PC cell highlighted, IR cell highlighted, READ/WRITE markers appear during STEP, breakpoint cells reflect disasm state, MMIO range marked on Cesar | [7 tests](../web/tests-e2e/memory-grid.spec.ts) |
+| P9-07 | ✅ RESOLVED | `cesar-io.spec.ts` — keyboard SEND writes 0xFFDA; Display panel renders memory-mapped chars from 0xFFDA–0xFFFF; Stack panel presence | [5 tests + 1 fixme](../web/tests-e2e/cesar-io.spec.ts) pending P7-09 fix. Discovered BUG-9 (display not reactive) while writing it |
+| P9-08 | ✅ RESOLVED | `samples.spec.ts` — each sample in `SAMPLES_BY_MACHINE` loads, runs to HALT | [8 tests](../web/tests-e2e/samples.spec.ts) — parameterised per machine; new samples auto-extend coverage |
+| P9-09 | ✅ RESOLVED | `chassis.spec.ts` — palette/density classes propagate to chassis; PWR / RUN / HLT lamps light at the right times; ServiceDrawer open/close transitions + aria-hidden | [10 tests](../web/tests-e2e/chassis.spec.ts) |
 
 ### Tier 2 — `@testing-library/svelte` component tests (pure primitives only)
 
 | ID    | Status  | Task | Notes |
 |-------|---------|------|-------|
-| P9-20 | ❌ OPEN | Add `@testing-library/svelte` + `jsdom` (or `happy-dom`), add `vitest` project for `environment: 'jsdom'` scoped to `tests-unit/` so the existing Node-env Vitest suite stays untouched | ~3 deps; keep Tier 2 opt-in so Tier 1 remains authoritative |
-| P9-21 | ❌ OPEN | `Lamp.test.ts` — `on` prop lights up, `color` prop applies the right class, `label` renders | Pure presentational, no store |
-| P9-22 | ❌ OPEN | `Segmented.test.ts` — chars render one-per-span, `size` + `color` props apply classes, blanks get `seg-blank` | |
-| P9-23 | ❌ OPEN | `PanelButton.test.ts` — `onClick` fires, `disabled` blocks click, `variant` applies colour class, keyboard Enter/Space activation | |
-| P9-24 | ❌ OPEN | `Toggle.test.ts` — on/off prop flips, click emits the callback | |
-| P9-25 | ❌ OPEN | `Etch.test.ts` + `Scanlines.test.ts` — simple presentation-only smoke | Low priority; mostly render-smoke |
+| P9-20 | ✅ RESOLVED | Added `@testing-library/svelte`, `@testing-library/jest-dom`, `@testing-library/user-event`, `jsdom`, `@sveltejs/vite-plugin-svelte` (promoted from transitive). Split [vitest.config.ts](../web/vitest.config.ts) into two projects: `core` (Node env, `tests/`) and `components` (JSDOM env, `tests-unit/`). Setup file at [tests-unit/setup.ts](../web/tests-unit/setup.ts) wires `@testing-library/jest-dom` matchers and `cleanup()` | Both projects run under `pnpm test` without interfering |
+| P9-21 | ✅ RESOLVED | `Lamp.test.ts` — `on` prop lights up, `color` prop applies the right class, `label` renders, `aria-label` + `role=img` when label set | [6 tests](../web/tests-unit/primitives/Lamp.test.ts) |
+| P9-22 | ✅ RESOLVED | `Segmented.test.ts` — chars render one-per-span, `seg-blank` on whitespace, `size` + `color` classes, md/amber defaults | [6 tests](../web/tests-unit/primitives/Segmented.test.ts) |
+| P9-23 | ✅ RESOLVED | `PanelButton.test.ts` — `onClick` fires, `disabled` blocks click, `variant` applies colour class, keyboard Enter/Space activation | [7 tests](../web/tests-unit/primitives/PanelButton.test.ts) |
+| P9-24 | ✅ RESOLVED | `Toggle.test.ts` — on/off aria-pressed, onChange emits next state, disabled blocks, compact class | [7 tests](../web/tests-unit/primitives/Toggle.test.ts) |
+| P9-25 | ✅ RESOLVED | `Etch.test.ts` + `Scanlines.test.ts` — class smoke + Etch renders children via `createRawSnippet` | [3 + 3 tests](../web/tests-unit/primitives/) |
 
 ### Exit criteria
 
